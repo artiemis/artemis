@@ -8,7 +8,7 @@ import time
 import traceback
 from functools import cached_property
 from pkgutil import iter_modules
-from typing import Literal, Optional, TypedDict
+from typing import Optional, TypedDict
 
 import aiohttp
 import discord

@@ -106,12 +106,12 @@ class Owner(commands.Cog, command_attrs={"hidden": True}):
         output = res.decoded
 
         embed = discord.Embed(
-            description=self.bot.codeblock(output, "cmd"),
+            description=self.bot.codeblock(output, ""),
             timestamp=pendulum.now(),
             color=discord.Color.green() if res.ok else discord.Color.red(),
         )
 
-        if res.ok and output != "Already up to date.":
+        if res.ok and output.strip() != "Already up to date.":
             view = RestartView(ctx)
             view.message = await ctx.reply(embed=embed, view=view)
             return

@@ -103,14 +103,15 @@ class Owner(commands.Cog, command_attrs={"hidden": True}):
                 await self.message.edit(view=None)
 
         res = await utils.run_cmd("git pull")
+        output = res.decoded
 
         embed = discord.Embed(
-            description=self.bot.codeblock(res.decoded, "cmd"),
+            description=self.bot.codeblock(output, "cmd"),
             timestamp=pendulum.now(),
             color=discord.Color.green() if res.ok else discord.Color.red(),
         )
 
-        if res.ok:
+        if res.ok and output != "Already up to date.":
             view = RestartView(ctx)
             view.message = await ctx.reply(embed=embed, view=view)
             return

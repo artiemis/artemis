@@ -1,0 +1,7 @@
+__pycache__/
+temp/
+env/
+*.log
+config.prod.toml
+config.dev.toml
+status.json

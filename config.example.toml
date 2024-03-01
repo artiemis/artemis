@@ -1,0 +1,15 @@
+token = "token"
+prefix = "!"
+user_agent = "user_agent"
+real_user_agent = "real_user_agent"
+api_base_url = "api_base_url"
+cdn_base_url = "cdn_base_url"
+main_guild_id = 1
+dev_guild_id = 1
+
+[keys]
+api = "api"
+catbox = "catbox"
+github = "github"
+cloudflare = "cloudflare"
+openai = "openai"

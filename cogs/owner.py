@@ -2,11 +2,9 @@ from __future__ import annotations, unicode_literals
 
 import json
 import os
-from turtle import color
 import typing
 from base64 import b64decode
 from io import StringIO
-from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 import discord
@@ -101,6 +99,8 @@ class Owner(commands.Cog, command_attrs={"hidden": True}):
 
             async def on_timeout(self):
                 await self.message.edit(view=None)
+
+        await ctx.typing()
 
         res = await utils.run_cmd("git pull")
         output = res.decoded

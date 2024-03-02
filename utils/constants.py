@@ -1,9 +1,12 @@
+from pathlib import Path
 from utils.common import read_json
 
 MAX_DISCORD_SIZE = 25 * 1024**2
 MAX_API_SIZE = 200 * 1024**2
 MAX_CATBOX_SIZE = 200 * 1024**2
 MAX_LITTERBOX_SIZE = 1024**3
+
+TEMP_DIR = Path("data/temp/")
 
 WIKT_LANGUAGES = read_json("data/wiktionary-languages.json")
 

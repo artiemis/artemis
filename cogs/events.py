@@ -92,7 +92,7 @@ class Events(commands.Cog):
             return
 
         content = message.content.lower()
-        if content.startswith(("$")) and "$jsk" not in content:
+        if content.startswith(config.prefix) and f"{config.prefix}jsk" not in content:
             cmd_log.debug(f"{message.author.id}: {message.content}")
 
         await self.handle_triggers(message, content)

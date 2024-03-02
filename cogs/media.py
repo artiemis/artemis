@@ -23,7 +23,7 @@ from yt_dlp.utils import parse_duration
 
 import utils
 from utils.common import ArtemisError
-from utils.constants import MAX_DISCORD_SIZE, MAX_LITTERBOX_SIZE
+from utils.constants import MAX_DISCORD_SIZE, MAX_LITTERBOX_SIZE, TEMP_DIR
 from utils.catbox import CatboxError
 from utils.flags import DLFlags
 from utils.iso_639 import get_language_name
@@ -32,7 +32,6 @@ from utils.views import DropdownView
 if TYPE_CHECKING:
     from bot import Artemis
 
-TEMP_DIR = Path("data/temp/")
 yt_dlp.utils.bug_reports_message = lambda: ""
 
 DEFAULT_OPTS = {
@@ -404,12 +403,11 @@ class Media(commands.Cog):
 
         async def monitor_download():
             nonlocal msg, state
-            path = Path("./data/temp/")
             while not finished:
                 content = "Processing..."
                 if state == "downloading":
                     match = None
-                    files = list(path.iterdir())
+                    files = list(TEMP_DIR.iterdir())
                     if files:
                         match = max(files, key=lambda f: f.stat().st_size)
                     if match:

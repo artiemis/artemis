@@ -1,14 +1,14 @@
 import asyncio
 import contextlib
+from json import JSONDecodeError
 import logging
 import os
-from pathlib import Path
 import sys
 import time
 import traceback
 from functools import cached_property
 from pkgutil import iter_modules
-from typing import Optional, TypedDict
+from typing import Optional
 
 import aiohttp
 import discord
@@ -22,13 +22,9 @@ from utils import reddit
 from utils.api import API
 from utils.catbox import Catbox, Litterbox
 from utils.common import read_json, ArtemisError
+from utils.constants import TEMP_DIR
 from utils.unogs import uNoGS
 from utils import config
-
-
-class Status(TypedDict):
-    name: str
-    emoji: str
 
 
 logging.basicConfig(
@@ -42,30 +38,32 @@ log = logging.getLogger("artemis")
 logging.getLogger("discord").setLevel(logging.WARNING)
 logging.getLogger("aiocache").setLevel(logging.ERROR)
 
-intents = discord.Intents(
-    messages=True,
-    message_content=True,
-    guilds=True,
-    members=True,
-    emojis=True,
-    reactions=True,
-    voice_states=True,
-)
-allowed_mentions = discord.AllowedMentions(everyone=False, replied_user=False)
-
-status: Status = read_json("data/status.json")
-
 
 class Artemis(commands.Bot):
     session: aiohttp.ClientSession
     httpx_session: httpx.AsyncClient
 
     def __init__(self):
+        intents = discord.Intents(
+            messages=True,
+            message_content=True,
+            guilds=True,
+            members=True,
+            emojis=True,
+            reactions=True,
+            voice_states=True,
+        )
+
+        try:
+            status = read_json("data/status.json")
+        except (JSONDecodeError, FileNotFoundError):
+            status = {"name": None, "emoji": None}
+
         super().__init__(
             command_prefix=commands.when_mentioned_or(config.prefix),
             help_command=HelpEmbedded(command_attrs={"hidden": True}, verify_checks=False),
             intents=intents,
-            allowed_mentions=allowed_mentions,
+            allowed_mentions=discord.AllowedMentions(everyone=False, replied_user=False),
             owner_id=134306884617371648,
             activity=discord.CustomActivity(name=status["name"], emoji=status["emoji"]),
         )
@@ -83,7 +81,7 @@ class Artemis(commands.Bot):
         self.invisible = discord.Colour(0x2F3136)
 
     async def maybe_send_restarted(self):
-        restart = Path("data/temp/restart")
+        restart = TEMP_DIR / "restart"
         if restart.exists():
             chid, _, mid = restart.read_text().partition("-")
             restart.unlink()
@@ -257,6 +255,8 @@ class HelpEmbedded(commands.MinimalHelpCommand):
 
 
 async def main():
+    TEMP_DIR.mkdir(exist_ok=True)
+
     async with Artemis() as bot:
         await bot.start(config.token)
 

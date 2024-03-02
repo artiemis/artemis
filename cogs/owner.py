@@ -15,6 +15,7 @@ import pendulum
 
 import utils
 from utils.common import ArtemisError
+from utils.constants import TEMP_DIR
 from utils.views import BaseView
 
 if TYPE_CHECKING:
@@ -76,8 +77,7 @@ class Owner(commands.Cog, command_attrs={"hidden": True}):
     @commands.is_owner()
     async def restart(self, ctx: commands.Context):
         await ctx.message.add_reaction("🔄")
-        with open("data/temp/restart", "w") as f:
-            f.write(f"{ctx.channel.id}-{ctx.message.id}")
+        (TEMP_DIR / "restart").write_text(f"{ctx.channel.id}-{ctx.message.id}")
         await self.bot.close()
 
     @commands.command(aliases=["u"])
@@ -93,8 +93,7 @@ class Owner(commands.Cog, command_attrs={"hidden": True}):
             async def on_restart(self, interaction: discord.Interaction, button):
                 await interaction.response.edit_message(view=None)
                 await self.message.add_reaction("🔄")
-                with open("data/temp/restart", "w") as f:
-                    f.write(f"{self.message.channel.id}-{self.message.id}")
+                (TEMP_DIR / "restart").write_text(f"{self.message.channel.id}-{self.message.id}")
                 await self.ctx.bot.close()
 
             async def on_timeout(self):

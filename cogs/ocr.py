@@ -27,8 +27,8 @@ class OCR(commands.Cog):
     async def ocr_impl(
         self,
         ctx: commands.Context,
-        flags: OCRFlags | OCRTranslateFlags,
-        translate: Literal["gt", "deepl"] = None,
+        flags: OCRFlags | OCRTranslateFlags | None,
+        translate: Literal["gt", "deepl"] | None = None,
     ):
         if flags:
             url = flags.url
@@ -76,7 +76,7 @@ class OCR(commands.Cog):
                 return await ctx.reply(file=discord.File(StringIO(text), "ocr.txt"))
             await ctx.reply(self.bot.codeblock(text, ""))
 
-    async def lens_impl(self, ctx: commands.Context[Artemis], url: str) -> str:
+    async def lens_impl(self, ctx: commands.Context[Artemis], url: str | None) -> str:
         headers = {"User-Agent": self.bot.user_agent}
         cookies = {
             "CONSENT": "PENDING+137",
@@ -138,7 +138,9 @@ class OCR(commands.Cog):
         """
         await self.ocr_impl(ctx, flags, translate="gt")
 
-    @commands.command(usage="[source:auto] [lang:eng] [l:eng] [s:auto] [dest:en] [d:en] <url>")
+    @commands.command(
+        aliases=["ocrdl"], usage="[source:auto] [lang:eng] [l:eng] [s:auto] [dest:en] [d:en] <url>"
+    )
     @commands.cooldown(1, 2, commands.BucketType.default)
     async def ocrdeepl(self, ctx: commands.Context, *, flags: Optional[OCRTranslateFlags]):
         """
@@ -159,7 +161,7 @@ class OCR(commands.Cog):
             return await ctx.reply(file=discord.File(StringIO(text), "lens.txt"))
         await ctx.reply(self.bot.codeblock(text, ""))
 
-    @commands.command(aliases=["ocrtr"])
+    @commands.command()
     @commands.max_concurrency(1)
     @commands.cooldown(1, 10, commands.BucketType.default)
     async def lensgt(self, ctx: commands.Context, *, url: Optional[str]):
@@ -171,7 +173,7 @@ class OCR(commands.Cog):
         cmd = self.bot.get_command("gt")
         await cmd(ctx, flags=flags)
 
-    @commands.command(aliases=["lenstr"])
+    @commands.command(aliases=["lensdl", "lenstr"])
     @commands.max_concurrency(1)
     @commands.cooldown(1, 10, commands.BucketType.default)
     async def lensdeepl(self, ctx: commands.Context, *, url: Optional[str]):

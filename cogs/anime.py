@@ -78,10 +78,13 @@ class Anime(commands.Cog):
         async with self.bot.session.post("https://graphql.anilist.co", json=payload) as r:
             data = await r.json()
 
+        if not data.get("data"):
+            return await ctx.reply(f"Anilist Error: {r.status} {r.reason}")
+
         data = data["data"]["MediaListCollection"]["lists"][0]["entries"]
 
         if not data:
-            return await ctx.reply("Artie is currently not watching any anime :()")
+            return await ctx.reply("Artie is currently not watching any anime :(")
 
         image_url = data[0]["media"]["coverImage"]["extraLarge"]
         color = data[0]["media"]["coverImage"]["color"]

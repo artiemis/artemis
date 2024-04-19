@@ -19,14 +19,14 @@ from discord.utils import format_dt
 from humanize import intcomma
 from PIL import Image
 
-import utils
-from utils import enigma2
-from utils.common import ArtemisError
-from utils.flags import WikipediaFlags
-from utils.views import DropdownView
+from .. import utils
+from ..utils import enigma2
+from ..utils.common import ArtemisError
+from ..utils.flags import WikipediaFlags
+from ..utils.views import DropdownView
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 
 class Useful(commands.Cog):

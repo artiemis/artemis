@@ -12,8 +12,8 @@ from aiohttp import ClientSession
 from humanize import intcomma
 from yt_dlp.utils import random_user_agent
 
-import utils
-from utils.common import ArtemisError
+from . import utils
+from .common import ArtemisError
 
 
 class Route:

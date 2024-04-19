@@ -8,7 +8,7 @@ from collections import deque
 from bs4 import BeautifulSoup
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 T = TypeVar("T")
 

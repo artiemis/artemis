@@ -21,16 +21,16 @@ from PIL import Image
 from pycaption import SRTWriter, WebVTTReader
 from yt_dlp.utils import parse_duration
 
-import utils
-from utils.common import ArtemisError
-from utils.constants import MAX_DISCORD_SIZE, MAX_LITTERBOX_SIZE, TEMP_DIR
-from utils.catbox import CatboxError
-from utils.flags import DLFlags
-from utils.iso_639 import get_language_name
-from utils.views import DropdownView
+from .. import utils
+from ..utils.common import ArtemisError
+from ..utils.constants import MAX_DISCORD_SIZE, MAX_LITTERBOX_SIZE, TEMP_DIR
+from ..utils.catbox import CatboxError
+from ..utils.flags import DLFlags
+from ..utils.iso_639 import get_language_name
+from ..utils.views import DropdownView
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 yt_dlp.utils.bug_reports_message = lambda: ""
 

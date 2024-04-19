@@ -4,12 +4,12 @@ import asyncio
 import io
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
-from utils.common import ArtemisError
+from .common import ArtemisError
 
 import aiohttp
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 
 @dataclass

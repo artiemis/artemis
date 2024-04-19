@@ -11,11 +11,11 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from utils import config
-from utils.constants import RIP_EMOJIS, TEEHEE_EMOJIS
+from ..utils import config
+from ..utils.constants import RIP_EMOJIS, TEEHEE_EMOJIS
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 log = logging.getLogger("artemis")
 cmd_log = logging.getLogger("commands")

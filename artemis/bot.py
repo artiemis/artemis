@@ -17,14 +17,16 @@ from discord import Webhook
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
-import utils
-from utils import reddit
-from utils.api import API
-from utils.catbox import Catbox, Litterbox
-from utils.common import read_json, ArtemisError
-from utils.constants import TEMP_DIR
-from utils.unogs import uNoGS
-from utils import config
+from .cogs import EXTENSIONS
+
+from . import utils
+from .utils import reddit
+from .utils.api import API
+from .utils.catbox import Catbox, Litterbox
+from .utils.common import read_json, ArtemisError
+from .utils.constants import TEMP_DIR
+from .utils.unogs import uNoGS
+from .utils import config
 
 
 logging.basicConfig(
@@ -118,8 +120,7 @@ class Artemis(commands.Bot):
 
         await self.load_extension("jishaku")
 
-        extensions = [e.name for e in iter_modules(["cogs"], prefix="cogs.")]
-        for extension in extensions:
+        for extension in EXTENSIONS:
             await self.load_extension(extension)
 
     async def close(self):

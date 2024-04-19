@@ -6,10 +6,10 @@ import discord
 import pendulum
 from discord.ext import commands
 
-from utils.common import ArtemisError, parse_short_time
+from ..utils.common import ArtemisError, parse_short_time
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 
 class ShortTime(commands.Converter):

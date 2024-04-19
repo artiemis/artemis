@@ -10,14 +10,14 @@ import discord
 import magic
 from discord.ext import commands
 
-import utils
-from utils.common import ArtemisError
-from utils.constants import TESSERACT_LANGUAGES
-from utils.flags import Flags, OCRFlags, OCRTranslateFlags
-from utils.iso_639 import get_language_name
+from .. import utils
+from ..utils.common import ArtemisError
+from ..utils.constants import TESSERACT_LANGUAGES
+from ..utils.flags import Flags, OCRFlags, OCRTranslateFlags
+from ..utils.iso_639 import get_language_name
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 
 class OCR(commands.Cog):

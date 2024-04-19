@@ -15,12 +15,12 @@ from discord.ext import commands
 from discord.utils import format_dt, snowflake_time
 from humanize import naturalsize
 
-import utils
-from utils.common import ArtemisError
-from utils.views import BaseView
+from .. import utils
+from ..utils.common import ArtemisError
+from ..utils.views import BaseView
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 
 class Meta(commands.Cog):

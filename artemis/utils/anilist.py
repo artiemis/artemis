@@ -6,7 +6,7 @@ from typing import Any, Optional
 import discord
 from anilist.types import Anime, Character, Manga
 
-from utils.common import trim
+from .common import trim
 
 ANILIST_COLOR = 0x02A9FF
 FOOTER = "Powered by AniList APIv2"

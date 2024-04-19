@@ -7,7 +7,7 @@ from urllib.parse import quote
 from aiohttp import ClientSession
 from yt_dlp.utils import random_user_agent
 
-import utils
+from . import utils
 
 
 class uNoGSError(Exception):

@@ -13,13 +13,13 @@ import pendulum
 from bs4 import BeautifulSoup
 from discord.ext import commands
 
-import utils
-from utils import config
-from utils.common import ArtemisError, read_json, trim
-from utils.views import DropdownView, ViewPages
+from .. import utils
+from ..utils import config
+from ..utils.common import ArtemisError, read_json, trim
+from ..utils.views import DropdownView, ViewPages
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 
 class Pokemon(TypedDict):

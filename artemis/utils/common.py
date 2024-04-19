@@ -24,10 +24,10 @@ from discord.ext import commands
 import feedparser
 from rapidfuzz import process
 
-import utils
+from .. import utils
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 
 # url regex

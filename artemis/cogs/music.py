@@ -10,12 +10,12 @@ from typing import TYPE_CHECKING, Optional
 import discord
 from discord.ext import commands
 
-import utils
-from cogs.media import DEFAULT_OPTS, run_ytdlp
-from utils.views import DropdownView
+from .. import utils
+from ..utils.views import DropdownView
+from .media import DEFAULT_OPTS, run_ytdlp
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 
 async def in_voice_channel(ctx: commands.Context):

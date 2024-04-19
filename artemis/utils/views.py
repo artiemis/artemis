@@ -3,7 +3,7 @@ from typing import Any, List
 import discord
 from discord.ext import commands
 
-from utils.common import trim
+from .common import trim
 
 
 class BaseView(discord.ui.View):

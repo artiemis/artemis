@@ -1,5 +1,5 @@
 from pathlib import Path
-from utils.common import read_json
+from .common import read_json
 
 MAX_DISCORD_SIZE = 25 * 1024**2
 MAX_API_SIZE = 200 * 1024**2

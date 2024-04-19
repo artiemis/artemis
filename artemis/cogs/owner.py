@@ -13,13 +13,13 @@ from discord.ext import commands
 from jishaku import codeblocks
 import pendulum
 
-import utils
-from utils.common import ArtemisError
-from utils.constants import TEMP_DIR
-from utils.views import BaseView
+from .. import utils
+from ..utils.common import ArtemisError
+from ..utils.constants import TEMP_DIR
+from ..utils.views import BaseView
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 
 class Owner(commands.Cog, command_attrs={"hidden": True}):

@@ -5,7 +5,7 @@ from typing import Dict, Literal, Optional
 
 import aiohttp
 
-from utils.common import is_valid_url
+from .common import is_valid_url
 
 Expiration = Literal[1, 12, 24, 72]
 

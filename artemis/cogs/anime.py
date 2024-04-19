@@ -16,13 +16,13 @@ from bs4 import BeautifulSoup
 from discord.ext import commands
 from discord.utils import format_dt
 
-import utils
-from utils.common import ArtemisError
-from utils.anilist import build_anilist_embed, build_character_embed
-from utils.views import DropdownView, ViewPages
+from .. import utils
+from ..utils.common import ArtemisError
+from ..utils.anilist import build_anilist_embed, build_character_embed
+from ..utils.views import DropdownView, ViewPages
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 
 watching_query = """query ($userId: Int, $type: MediaType) {

@@ -6,10 +6,10 @@ from csv import DictReader
 from io import StringIO
 from typing import TYPE_CHECKING, Literal, TypedDict
 
-from utils.common import fuzzy_search, read_json
+from .common import fuzzy_search, read_json
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 
 class Language(TypedDict):

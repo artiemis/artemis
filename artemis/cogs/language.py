@@ -17,22 +17,22 @@ from discord import app_commands
 from discord.ext import commands
 from wiktionaryparser import WiktionaryParser
 
-import utils
-from utils import iso_639
-from utils.common import (
+from .. import utils
+from ..utils import iso_639
+from ..utils.common import (
     ArtemisError,
     Stopwatch,
     read_json,
 )
-from utils.constants import (
+from ..utils.constants import (
     GT_LANGUAGES_EXTRAS,
     WIKT_LANGUAGES,
 )
-from utils.flags import TranslateFlags, TTSFlags, WiktionaryFlags
-from utils.views import ViewPages
+from ..utils.flags import TranslateFlags, TTSFlags, WiktionaryFlags
+from ..utils.views import ViewPages
 
 if TYPE_CHECKING:
-    from bot import Artemis
+    from ..bot import Artemis
 
 # Mod aiogoogletrans
 GT_LANGUAGES.update(GT_LANGUAGES_EXTRAS)

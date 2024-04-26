@@ -2,8 +2,8 @@ module.exports = {
   apps: [
     {
       name: "artemis",
-      interpreter: "./env/bin/python",
-      script: "./bot.py",
+      script: "/bin/bash",
+      args: "-c './env/bin/python -m artemis'",
       out_file: "/dev/null",
       error_file: "/dev/null",
       log_file: "./artemis.log",

@@ -7,7 +7,6 @@ import sys
 import time
 import traceback
 from functools import cached_property
-from pkgutil import iter_modules
 from typing import Optional
 
 import aiohttp

@@ -15,8 +15,7 @@ from discord.ext import commands
 from discord.utils import format_dt, snowflake_time
 from humanize import naturalsize
 
-from .. import utils
-from ..utils.common import ArtemisError
+from ..utils.common import ArtemisError, check_for_ssrf, is_valid_url
 from ..utils.views import BaseView
 
 if TYPE_CHECKING:
@@ -44,9 +43,17 @@ class Meta(commands.Cog):
         embed.set_footer(text="Thanks for checking in on me!")
         await ctx.reply(embed=embed)
 
-    @commands.command()
-    async def isdown(self, ctx: commands.Context, url: utils.URL):
+    @commands.command(aliases=["isup"])
+    async def isdown(self, ctx: commands.Context, url: str):
         """Check if a site is down."""
+
+        url = url.strip("<>")
+        if not url.startswith(("https://", "http://")):
+            url = f"https://{url}"
+
+        if not is_valid_url(url):
+            raise ArtemisError("That doesn't look like a valid URL.")
+        check_for_ssrf(url)
 
         headers = {"User-Agent": self.bot.user_agent}
 

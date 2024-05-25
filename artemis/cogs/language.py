@@ -89,6 +89,8 @@ async def get_deepl_languages():
 
 # Translation slash commands
 @app_commands.context_menu(name="Translate (DeepL)")
+@app_commands.allowed_installs(guilds=False, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def deepl_slash(interaction: discord.Interaction, message: discord.Message):
     await interaction.response.defer(ephemeral=True)
 
@@ -123,6 +125,8 @@ async def deepl_slash(interaction: discord.Interaction, message: discord.Message
 
 
 @app_commands.context_menu(name="Translate (Google)")
+@app_commands.allowed_installs(guilds=False, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def gt_slash(interaction: discord.Interaction, message: discord.Message):
     await interaction.response.defer(ephemeral=True)
 

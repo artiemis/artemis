@@ -82,7 +82,7 @@ class OCR(commands.Cog):
             "CONSENT": "PENDING+137",
             "SOCS": "CAISHAgBEhJnd3NfMjAyMzEwMTItMF9SQzQaAnBsIAEaBgiA48GpBg",
         }
-        final_data_re = r"\"(\w+)\",\[\[(\[\".*?\"\])\]"
+        final_data_re = r"\"([\w-]+)\",\[\[(\[\".*?\"\])\]"
 
         cur_time = utils.time("ms")
         upload_url = f"https://lens.google.com/v3/upload?hl=en&re=df&st={cur_time}&ep=gsbubb"

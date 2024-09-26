@@ -17,12 +17,11 @@ import pendulum
 import yt_dlp
 from bs4 import BeautifulSoup
 from discord.ext import commands
-from PIL import Image
 from pycaption import SRTWriter, WebVTTReader
 from yt_dlp.utils import parse_duration
 
 from .. import utils
-from ..utils.common import ArtemisError
+from ..utils.common import ArtemisError, compress_image
 from ..utils.constants import MAX_DISCORD_SIZE, MAX_LITTERBOX_SIZE, TEMP_DIR
 from ..utils.catbox import CatboxError
 from ..utils.flags import DLFlags
@@ -327,14 +326,6 @@ class Media(commands.Cog):
         utils.check_for_ssrf(url)
         ytdl_opts = {**DEFAULT_OPTS, "format": "bv*/b"}
 
-        @utils.in_executor
-        def to_jpeg(image):
-            im = Image.open(image)
-            buff = BytesIO()
-            im.save(buff, "JPEG", quality=90)
-            buff.seek(0)
-            return buff
-
         if not (re.fullmatch(TIMESTAMP_RE, timestamp) or re.fullmatch(SECONDS_RE, timestamp)):
             return await ctx.reply("Invalid timestamp format, check out `$help screencap`.")
 
@@ -359,7 +350,7 @@ class Media(commands.Cog):
             buff = BytesIO(stdout)
 
             if len(stdout) > MAX_DISCORD_SIZE:
-                buff = await to_jpeg(buff)
+                buff = await compress_image(buff, fmt="JPEG", quality=90)
                 msg += "\nThe image was too big for me to upload so I converted it to JPEG Q90."
             dfile = discord.File(buff, f"{title}.png")
         return await ctx.reply(content=msg, file=dfile)

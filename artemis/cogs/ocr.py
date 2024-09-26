@@ -11,7 +11,7 @@ import magic
 from discord.ext import commands
 
 from .. import utils
-from ..utils.common import ArtemisError
+from ..utils.common import ArtemisError, compress_image, get_reply
 from ..utils.constants import TESSERACT_LANGUAGES
 from ..utils.flags import Flags, OCRFlags, OCRTranslateFlags
 from ..utils.iso_639 import get_language_name
@@ -48,8 +48,17 @@ class OCR(commands.Cog):
                 embed = discord.Embed(description=msg, color=discord.Color.red())
                 return await ctx.reply(embed=embed)
 
-        message = await utils.get_message_or_reference(ctx)
-        image = await utils.get_attachment_or_url(ctx, message, url, ["image/jpeg", "image/png"])
+        if url or ctx.message.attachments:
+            message = ctx.message
+        else:
+            message = await get_reply(ctx)
+
+        if not message:
+            raise ArtemisError("Could not find any images.")
+
+        image = await utils.get_file_from_attachment_or_url(
+            ctx, message, url, ["image/jpeg", "image/png"]
+        )
 
         args = f"tesseract stdin stdout -l {lang}"
         result = await utils.run_cmd(args, input=image)
@@ -89,8 +98,23 @@ class OCR(commands.Cog):
 
         await ctx.typing()
 
-        message = await utils.get_message_or_reference(ctx)
-        image = await utils.get_attachment_or_url(ctx, message, url, ["image/jpeg", "image/png"])
+        if url or ctx.message.attachments:
+            message = ctx.message
+        else:
+            message = await get_reply(ctx)
+
+        if not message:
+            raise ArtemisError("Could not find any images.")
+
+        image = await utils.get_file_from_attachment_or_url(
+            ctx, message, url, ["image/jpeg", "image/png"]
+        )
+
+        try:
+            image = await compress_image(image, size=1000)
+            image = image.getvalue()
+        except Exception as e:
+            raise ArtemisError(f"Could not compress image: {e}") from e
 
         content_type = magic.from_buffer(image, mime=True)
         ext = mimetypes.guess_extension(content_type)
@@ -111,7 +135,7 @@ class OCR(commands.Cog):
         match = re.search(final_data_re, html)
         if not match:
             if ctx.author.id == self.bot.owner.id:
-                await ctx.send(file=utils.File(html, "lens.html"))
+                await ctx.send(file=utils.file(html, "lens.html"))
             raise ArtemisError("No text detected.")
         _lang, lines = match.groups()
 

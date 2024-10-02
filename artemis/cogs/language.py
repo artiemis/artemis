@@ -15,7 +15,9 @@ from aiogoogletrans import Translator
 from bs4 import BeautifulSoup, Tag
 from discord import app_commands
 from discord.ext import commands
+from discord.utils import format_dt
 from wiktionaryparser import WiktionaryParser
+from langdetect import detect
 
 from .. import utils
 from ..utils import iso_639
@@ -46,73 +48,40 @@ nimi_lookup = {entry["word"]: entry for entry in nimi}
 nimi_reverse_lookup = {entry["definition"]: entry for entry in nimi}
 
 
-@cached()
-async def get_deepl_languages():
-    languages = [
-        "bg",
-        "cs",
-        "da",
-        "de",
-        "el",
-        "en",
-        "es",
-        "et",
-        "fi",
-        "fr",
-        "hu",
-        "id",
-        "it",
-        "ja",
-        "ko",
-        "lt",
-        "lv",
-        "nb",
-        "nl",
-        "pl",
-        "pt",
-        "ro",
-        "ru",
-        "sk",
-        "sl",
-        "sv",
-        "tr",
-        "uk",
-        "zh",
-    ]
-    languages = {code: iso_639.get_language_name(code) for code in languages}
-
-    if languages.get("el"):
-        languages["el"] = "Greek"
-
-    return languages
-
-
 # Translation slash commands
 @app_commands.context_menu(name="Translate (DeepL)")
 @app_commands.allowed_installs(guilds=False, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-async def deepl_slash(interaction: discord.Interaction, message: discord.Message):
+async def deepl_slash(interaction: discord.Interaction[Artemis], message: discord.Message):
     await interaction.response.defer(ephemeral=True)
 
     content = message.content
     if not content:
         return await interaction.followup.send("No text detected.", ephemeral=True)
 
-    languages = await get_deepl_languages()
+    languages = interaction.client.deepl.languages
+
+    result = None
+    result_src = None
+    result_dest = 'en'
+    billed_characters = None
 
     try:
-        result = await interaction.client.api.deepl(content, "auto", "en")
-    except Exception as err:
-        return await interaction.followup.send(f"Error: {err}", ephemeral=True)
-
-    src = result.src.lower()
-    dest = result.dst.lower()
-    try:
-        src = languages[src]
-        dest = languages[dest]
+        result = await interaction.client.deepl.translate(content, 'auto', 'EN')
+        result_src = result.src.lower()
+        billed_characters = result.billed_characters
     except Exception:
-        pass
+        src = detect(content)
+        if src == 'unknown' or src not in languages:
+            raise ArtemisError("Could not detect language, sorry!")
+        try:
+            result = await interaction.client.api.deepl(content, src, 'en')
+            result_src = src
+        except Exception as err:
+            raise ArtemisError(f"Could not translate with any method, epxloding with last error:\n`{err}`")
 
+    display_src = languages.get(result_src) or result_src
+    display_dest = languages.get(result_dest) or result_dest
     translation = result.translation
 
     embed = discord.Embed(colour=0x0F2B46)
@@ -120,7 +89,9 @@ async def deepl_slash(interaction: discord.Interaction, message: discord.Message
         name="DeepL",
         icon_url="https://www.google.com/s2/favicons?domain=deepl.com&sz=64",
     )
-    embed.add_field(name=f"From {src} to {dest}", value=translation)
+    embed.add_field(name=f"From {display_src} to {display_dest}", value=translation)
+    if billed_characters:
+        embed.set_footer(text=f"Billed characters: {billed_characters}")
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 
@@ -345,7 +316,9 @@ class Language(commands.Cog):
         embed.add_field(name=f"From {src} to {dest}", value=translation)
         await ctx.reply(embed=embed)
 
-    @commands.command(usage="[source:auto] [s:auto] [dest:en] [d:en] <text>")
+    @commands.group(
+        invoke_without_command=True, usage="[source:auto] [s:auto] [dest:en] [d:en] <text>"
+    )
     @commands.max_concurrency(1)
     @commands.cooldown(1, 2, commands.BucketType.default)
     async def deepl(self, ctx: commands.Context, *, flags: TranslateFlags):
@@ -369,7 +342,7 @@ class Language(commands.Cog):
 
         await ctx.typing()
 
-        languages = await get_deepl_languages()
+        languages = self.bot.deepl.languages
 
         if src != "auto" and src not in languages or dest not in languages:
             msg = "Unsupported language code, list of supported languages:\n\n"
@@ -377,25 +350,36 @@ class Language(commands.Cog):
             embed = discord.Embed(description=msg, color=discord.Color.red())
             return await ctx.reply(embed=embed)
 
-        try:
-            result = await self.bot.api.deepl(text, src, dest)
-        except Exception as err:
-            return await ctx.reply(err)
+        result = None
+        result_src = None
+        result_dest = dest.lower()
+        billed_characters = None
 
-        src = result.src.lower()
-        dest = result.dst.lower()
+        # try deepl api first
         try:
-            src = languages[src]
-            dest = languages[dest]
+            result = await self.bot.deepl.translate(text, src.upper(), dest.upper())
+            result_src = result.src.lower()
+            billed_characters = result.billed_characters
         except Exception:
-            pass
+            # if that fails, try our scraper
+            if src == 'auto':
+                src = detect(text)
+                if src == 'unknown' or src not in languages:
+                    raise ArtemisError("Could not detect language, try specifying one?")
+            try:
+                result = await self.bot.api.deepl(text, src, dest)
+                result_src = src
+            except Exception as err:
+                raise ArtemisError(f"Could not translate with any method, epxloding with last error:\n`{err}`")
 
+        display_src = languages.get(result_src) or result_src
+        display_dest = languages.get(result_dest) or result_dest
         translation = result.translation
 
         if len(translation) > 1024:
-            buff = f"--- From {src} to {dest} ---\n{translation}".encode("utf-8")
+            buff = f"--- From {display_src} to {display_dest} ---\n{translation}".encode("utf-8")
             buff = BytesIO(buff)
-            file = discord.File(buff, f"{src}-{dest}.txt")
+            file = discord.File(buff, f"{display_src}-{display_dest}.txt")
 
             return await ctx.reply(
                 "The translation could not fit on the screen, so here's a file:",
@@ -407,8 +391,24 @@ class Language(commands.Cog):
             name="DeepL",
             icon_url="https://www.google.com/s2/favicons?domain=deepl.com&sz=64",
         )
-        embed.add_field(name=f"From {src} to {dest}", value=translation)
+        embed.add_field(name=f"From {display_src} to {display_dest}", value=translation)
+        if billed_characters:
+            embed.set_footer(text=f"Billed characters: {billed_characters}")
         await ctx.reply(embed=embed)
+
+    @deepl.command(aliases=["quota"])
+    async def usage(self, ctx: commands.Context):
+        """
+        Returns the character quota left for the month.
+        """
+        await ctx.typing()
+        usage = await self.bot.deepl.usage()
+        reset = (
+            pendulum.now("UTC").add(months=1).replace(day=2, hour=16, minute=30, second=0)
+        )
+        await ctx.reply(
+            f"Characters used: **{usage.character_count}**\nCharacters left: **{usage.character_limit - usage.character_count}**\nQuota resets {format_dt(reset, "R")}."
+        )
 
     @commands.command(usage="[lang:en] [l:en] <text>")
     @commands.max_concurrency(1)

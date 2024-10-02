@@ -10,6 +10,7 @@ class Keys:
     github: str
     cloudflare: str
     openai: str
+    deepl: str
 
 
 @dataclass

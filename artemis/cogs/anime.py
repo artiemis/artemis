@@ -284,7 +284,7 @@ class Anime(commands.Cog):
         embed.set_footer(text="Powered by trace.moe")
         await ctx.reply(embed=embed)
 
-    @whatanime.command()
+    @whatanime.command(aliases=["usage"])
     async def quota(self, ctx: commands.Context):
         """
         Returns the search quota left for the month.

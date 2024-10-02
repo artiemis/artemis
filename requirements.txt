@@ -24,3 +24,4 @@ h2
 aiogoogletrans
 setuptools
 git+https://github.com/Suyash458/WiktionaryParser
+langdetect

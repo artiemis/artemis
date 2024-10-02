@@ -68,59 +68,6 @@ class Media(commands.Cog):
     def __init__(self, bot: Artemis):
         self.bot: Artemis = bot
 
-    @commands.command(aliases=["nf"])
-    @commands.cooldown(1, 2, commands.BucketType.user)
-    async def netflix(self, ctx: commands.Context, *, query: str):
-        """Check if and where a show is available on Netflix."""
-
-        await ctx.typing()
-        data = await self.bot.unogs.search(query)
-        if "total" not in data:
-            return await ctx.reply("The API returned no data, weird!")
-        elif data["total"] == 0:
-            return await ctx.reply("No results found.")
-        elif data["total"] == 1:
-            data = data["results"][0]
-        else:
-            view = DropdownView(
-                ctx,
-                data["results"],
-                lambda x: html.unescape(x["title"]),
-                placeholder="Choose title...",
-            )
-            data = await view.prompt()
-            if not data:
-                return
-
-        title = html.unescape(data["title"])
-        synopsis = html.unescape(data["synopsis"])
-        nfid = data["nfid"]
-        nfurl = f"https://www.netflix.com/title/{data['nfid']}"
-        img = data.get("poster") or data.get("img")
-
-        countries = await self.bot.unogs.fetch_details(nfid, "countries")
-        flags = " ".join([f":flag_{country['cc'].strip().lower()}:" for country in countries])
-
-        audio = []
-        subtitles = []
-        for country in countries:
-            audio += country["audio"].split(",")
-            subtitles += country["subtitle"].split(",")
-        audio, subtitles = sorted(set(audio)), sorted(set(subtitles))
-        audio, subtitles = [a for a in audio if a], [s for s in subtitles if s]
-
-        embed = discord.Embed(title=title, description=synopsis, url=nfurl, color=0xE50914)
-        if img and "http" in img:
-            embed.set_image(url=img)
-        embed.set_author(
-            name="Netflix",
-            icon_url="https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2016.png",
-        )
-        embed.add_field(name="Availability", value=flags)
-        embed.add_field(name="Audio", value=", ".join(audio), inline=False)
-        embed.add_field(name="Subtitles", value=", ".join(subtitles), inline=False)
-        await ctx.reply(embed=embed)
-
     @commands.command(aliases=["thumb"])
     async def thumbnail(self, ctx: commands.Context, url: str):
         """Gives you a video thumbnail URL for a video from any site supported by YTDL."""

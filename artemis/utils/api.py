@@ -4,9 +4,11 @@ import asyncio
 import io
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
-from .common import ArtemisError
 
 import aiohttp
+
+from .common import ArtemisError
+
 
 if TYPE_CHECKING:
     from ..bot import Artemis
@@ -14,8 +16,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class DeepLResult:
-    src: str
-    dst: str
     translation: str
 
 
@@ -24,8 +24,8 @@ class API:
         self.base_url = "http://127.0.0.1:3000"
         self.token = token
         self.session: aiohttp.ClientSession = bot.session
-        self.HEADERS = {"User-Agent": bot.real_user_agent}
-        self.AUTHED_HEADERS = {**self.HEADERS, "Authorization": f"Bearer {self.token}"}
+        self.headers = {"User-Agent": bot.real_user_agent}
+        self.authed_headers = {**self.headers, "Authorization": f"Bearer {self.token}"}
 
     async def _aioread(self, fp):
         return await asyncio.to_thread(fp.read)
@@ -38,7 +38,7 @@ class API:
         res_type: Literal["json", "text", "bytes"] = "json",
         **kwargs,
     ) -> Any:
-        headers = self.AUTHED_HEADERS if authed else self.HEADERS
+        headers = self.authed_headers if authed else self.headers
         async with self.session.request(
             method, self.base_url + path, headers=headers, **kwargs
         ) as r:
@@ -54,17 +54,17 @@ class API:
         self,
         url: str,
         selector: str | None = None,
-        waitForSelector: str | None = None,
-        waitForFunction: str | None = None,
+        wait_for_selector: str | None = None,
+        wait_for_function: str | None = None,
     ) -> io.BytesIO:
         """Returns a PNG screenshot of the website at url with optional selector."""
         params = {"url": url}
         if selector:
             params["selector"] = selector
-        if waitForSelector:
-            params["waitForSelector"] = waitForSelector
-        if waitForFunction:
-            params["waitForFunction"] = waitForFunction
+        if wait_for_selector:
+            params["waitForSelector"] = wait_for_selector
+        if wait_for_function:
+            params["waitForFunction"] = wait_for_function
 
         res: bytes = await self._request(
             "GET", "/webdriver/screenshot", authed=True, res_type="bytes", params=params
@@ -76,9 +76,9 @@ class API:
         data = {"src": src.lower(), "dst": dst.lower(), "text": text}
 
         async with self.session.post(
-            self.base_url + "/webdriver/deepl", json=data, headers=self.AUTHED_HEADERS
+            self.base_url + "/webdriver/deepl", json=data, headers=self.authed_headers
         ) as r:
             data = await r.json()
             if not r.ok:
-                raise ArtemisError(f"DeepL Error: `{data.get('error', 'Unknown')}`")
+                raise ArtemisError(f"DeepL Error: {data.get('error', 'Unknown')}")
             return DeepLResult(**data)

@@ -19,12 +19,12 @@ from discord.ext.commands.cooldowns import BucketType
 from .cogs import EXTENSIONS
 
 from . import utils
-from .utils import reddit
+from .utils.reddit import Reddit
 from .utils.api import API
 from .utils.catbox import Catbox, Litterbox
+from .utils.deepl import DeepL
 from .utils.common import read_json, ArtemisError
 from .utils.constants import TEMP_DIR
-from .utils.unogs import uNoGS
 from .utils import config
 
 
@@ -107,8 +107,8 @@ class Artemis(commands.Bot):
         self.api = API(self, self.keys.api)
         self.catbox = Catbox(self.keys.catbox, session=self.session)
         self.litterbox = Litterbox(session=self.session)
-        self.unogs = uNoGS(session=self.session)
-        self.reddit = reddit.Reddit(self.session)
+        self.reddit = Reddit(self.session)
+        self.deepl = DeepL(self, self.keys.deepl)
 
         await self.maybe_send_restarted()
 

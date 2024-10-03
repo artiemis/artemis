@@ -1,7 +1,6 @@
 from __future__ import annotations, unicode_literals
 
 import asyncio
-import html
 import re
 import shlex
 import struct
@@ -19,6 +18,7 @@ from bs4 import BeautifulSoup
 from discord.ext import commands
 from pycaption import SRTWriter, WebVTTReader
 from yt_dlp.utils import parse_duration
+from yt_dlp.extractor.youtube import YoutubeIE
 
 from .. import utils
 from ..utils.common import ArtemisError, compress_image
@@ -56,7 +56,25 @@ def format_ytdlp_error(error: str) -> str:
     return ret
 
 
+YOUTUBE_BANNED_MESSAGE = """
+# Artemis has been banned from YouTube. 
+## Here are some trusted alternatives:
+
+**Cross-platform**
+**[Cobalt](<https://cobalt.tools/>)** - user-friendly web application
+
+**Android**
+**[Seal](<https://github.com/JunkFood02/Seal>)** - pretty open-source app that wraps yt-dlp
+
+**Desktop (Advanced)**
+**[yt-dlp](<https://github.com/yt-dlp/yt-dlp>)** - the best command-line downloader
+"""
+
+
 async def run_ytdlp(query: str, opts: dict, download: bool = True) -> dict:
+    if YoutubeIE.suitable(query):
+        raise ArtemisError(YOUTUBE_BANNED_MESSAGE)
+
     try:
         with yt_dlp.YoutubeDL(opts) as ytdl:
             return await asyncio.to_thread(ytdl.extract_info, query, download=download)
@@ -339,7 +357,7 @@ class Media(commands.Cog):
         trim = flags.trim
         ss, to = flags.ss, None
 
-        async def monitor_download():
+        async def _monitor_download():
             nonlocal msg, state
             while not finished:
                 content = "Processing..."
@@ -424,7 +442,7 @@ class Media(commands.Cog):
                 ytdl_opts["format"] = format
 
             info_dict = None
-            asyncio.create_task(monitor_download())
+            # asyncio.create_task(monitor_download())
             async with ctx.typing():
                 info_dict = await run_ytdlp(url, ytdl_opts)
             state = "uploading"

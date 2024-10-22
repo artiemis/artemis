@@ -24,6 +24,7 @@ from ..utils import iso_639
 from ..utils.common import (
     ArtemisError,
     Stopwatch,
+    get_reply,
     read_json,
 )
 from ..utils.constants import (
@@ -63,22 +64,24 @@ async def deepl_slash(interaction: discord.Interaction[Artemis], message: discor
 
     result = None
     result_src = None
-    result_dest = 'en'
+    result_dest = "en"
     billed_characters = None
 
     try:
-        result = await interaction.client.deepl.translate(content, 'auto', 'EN')
+        result = await interaction.client.deepl.translate(content, "auto", "EN")
         result_src = result.src.lower()
         billed_characters = result.billed_characters
     except Exception:
         src = detect(content)
-        if src == 'unknown' or src not in languages:
+        if src == "unknown" or src not in languages:
             raise ArtemisError("Could not detect language, sorry!")
         try:
-            result = await interaction.client.api.deepl(content, src, 'en')
+            result = await interaction.client.api.deepl(content, src, "en")
             result_src = src
         except Exception as err:
-            raise ArtemisError(f"Could not translate with any method, epxloding with last error:\n`{err}`")
+            raise ArtemisError(
+                f"Could not translate with any method, epxloding with last error:\n`{err}`"
+            )
 
     display_src = languages.get(result_src) or result_src
     display_dest = languages.get(result_dest) or result_dest
@@ -265,7 +268,7 @@ class Language(commands.Cog):
 
     @commands.command(usage="[source:auto] [s:auto] [dest:en] [d:en] <text>")
     @commands.cooldown(1, 2, commands.BucketType.default)
-    async def gt(self, ctx: commands.Context, *, flags: TranslateFlags):
+    async def gt(self, ctx: commands.Context, *, flags: TranslateFlags | None):
         """
         Translation using Google Translate.
 
@@ -277,9 +280,18 @@ class Language(commands.Cog):
         `{prefix}gt Hej, co tam?`
         `{prefix}gt s:pl d:en Hey, what's up?`
         """
-        text = flags.text
-        src = flags.source or "auto"
-        dest = flags.dest or "en"
+        text = None
+        src = "auto"
+        dest = "en"
+
+        if flags:
+            text = flags.text
+            src = flags.source or src
+            dest = flags.dest or dest
+
+        reply = await get_reply(ctx)
+        if reply and not text:
+            text = reply.content
 
         if not text:
             raise ArtemisError("No text provided.")
@@ -321,7 +333,7 @@ class Language(commands.Cog):
     )
     @commands.max_concurrency(1)
     @commands.cooldown(1, 2, commands.BucketType.default)
-    async def deepl(self, ctx: commands.Context, *, flags: TranslateFlags):
+    async def deepl(self, ctx: commands.Context, *, flags: TranslateFlags | None):
         """
         Translation using DeepL.
 
@@ -333,9 +345,18 @@ class Language(commands.Cog):
         `{prefix}deepl Hej, co tam?`
         `{prefix}trd s:pl d:en Hey, what's up?`
         """
-        text = flags.text
-        src = flags.source or "auto"
-        dest = flags.dest or "en"
+        text = None
+        src = "auto"
+        dest = "en"
+
+        if flags:
+            text = flags.text
+            src = flags.source or src
+            dest = flags.dest or dest
+
+        reply = await get_reply(ctx)
+        if reply and not text:
+            text = reply.content
 
         if not text:
             raise ArtemisError("No text provided.")
@@ -362,15 +383,17 @@ class Language(commands.Cog):
             billed_characters = result.billed_characters
         except Exception:
             # if that fails, try our scraper
-            if src == 'auto':
+            if src == "auto":
                 src = detect(text)
-                if src == 'unknown' or src not in languages:
+                if src == "unknown" or src not in languages:
                     raise ArtemisError("Could not detect language, try specifying one?")
             try:
                 result = await self.bot.api.deepl(text, src, dest)
                 result_src = src
             except Exception as err:
-                raise ArtemisError(f"Could not translate with any method, epxloding with last error:\n`{err}`")
+                raise ArtemisError(
+                    f"Could not translate with any method, epxloding with last error:\n`{err}`"
+                )
 
         display_src = languages.get(result_src) or result_src
         display_dest = languages.get(result_dest) or result_dest
@@ -403,9 +426,7 @@ class Language(commands.Cog):
         """
         await ctx.typing()
         usage = await self.bot.deepl.usage()
-        reset = (
-            pendulum.now("UTC").add(months=1).replace(day=2, hour=16, minute=30, second=0)
-        )
+        reset = pendulum.now("UTC").add(months=1).replace(day=2, hour=16, minute=30, second=0)
         await ctx.reply(
             f"Characters used: **{usage.character_count}**\nCharacters left: **{usage.character_limit - usage.character_count}**\nQuota resets {format_dt(reset, "R")}."
         )

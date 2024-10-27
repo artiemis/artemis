@@ -236,7 +236,11 @@ class Anime(commands.Cog):
             url = ctx.message.attachments[0].url
 
         await ctx.typing()
-        async with self.bot.session.get(f"https://api.trace.moe/search?anilistInfo&url={url}") as r:
+
+        headers = {"User-Agent": ctx.bot.user_agent}
+        async with self.bot.session.get(
+            f"https://api.trace.moe/search?anilistInfo&url={url}", headers=headers
+        ) as r:
             if r.status == 402:
                 raise ArtemisError("Error: The bot has reached max API search quota for the month.")
             json = await r.json()

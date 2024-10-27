@@ -237,10 +237,14 @@ class Anime(commands.Cog):
 
         await ctx.typing()
 
-        headers = {"User-Agent": ctx.bot.user_agent}
-        async with self.bot.session.get(
-            f"https://api.trace.moe/search?anilistInfo&url={url}", headers=headers
-        ) as r:
+        if "discord" in url:
+            async with self.bot.session.get(url) as r:
+                if r.status != 200:
+                    return await ctx.reply(f"Discord CDN Error: {r.status} {r.reason}")
+                buff = BytesIO(await r.read())
+                url = await self.bot.litterbox.upload(buff)
+
+        async with self.bot.session.get(f"https://api.trace.moe/search?anilistInfo&url={url}") as r:
             if r.status == 402:
                 raise ArtemisError("Error: The bot has reached max API search quota for the month.")
             json = await r.json()

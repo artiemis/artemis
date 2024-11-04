@@ -10,3 +10,4 @@ disable=
     unspecified-encoding,
     broad-exception-caught,
     raise-missing-from,
+    not-a-mapping,

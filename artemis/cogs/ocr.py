@@ -87,10 +87,7 @@ class OCR(commands.Cog):
 
     async def lens_impl(self, ctx: commands.Context[Artemis], url: str | None) -> str:
         headers = {"User-Agent": self.bot.user_agent}
-        cookies = {
-            "CONSENT": "PENDING+137",
-            "SOCS": "CAISHAgBEhJnd3NfMjAyMzEwMTItMF9SQzQaAnBsIAEaBgiA48GpBg",
-        }
+        cookies = self.bot.keys.google
         final_data_re = r"\"([\w-]+)\",\[\[(\[\".*?\"\])\]"
 
         cur_time = utils.time("ms")

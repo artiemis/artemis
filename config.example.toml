@@ -13,3 +13,6 @@ catbox = "catbox"
 github = "github"
 cloudflare = "cloudflare"
 openai = "openai"
+
+# google cookies for lens API
+[keys.google]

@@ -1,6 +1,7 @@
 import os
-from .common import read_toml
 from dataclasses import dataclass
+
+from .common import read_toml
 
 
 @dataclass
@@ -11,6 +12,7 @@ class Keys:
     cloudflare: str
     openai: str
     deepl: str
+    google: dict[str, str]
 
 
 @dataclass
@@ -31,11 +33,11 @@ class Config:
 
 def load_config() -> Config:
     if os.getenv("ENV") == "production":
-        config = read_toml("config.prod.toml")
+        values = read_toml("config.prod.toml")
     else:
-        config = read_toml("config.dev.toml")
+        values = read_toml("config.dev.toml")
 
-    return Config(**config)
+    return Config(**values)
 
 
 config = load_config()

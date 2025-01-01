@@ -5,7 +5,6 @@ import contextlib
 import logging
 import random
 import re
-from logging.handlers import RotatingFileHandler
 from typing import TYPE_CHECKING
 
 import discord
@@ -18,13 +17,6 @@ if TYPE_CHECKING:
     from ..bot import Artemis
 
 log = logging.getLogger("artemis")
-cmd_log = logging.getLogger("commands")
-cmd_log.propagate = False
-cmd_log.setLevel(logging.DEBUG)
-ch = RotatingFileHandler("data/commands.log", "a", 10 * 1024**2, encoding="utf-8")
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(logging.Formatter("[{asctime}] {message}", "%Y-%m-%d %H:%M:%S", style="{"))
-cmd_log.addHandler(ch)
 
 TIKTOK_RE = re.compile(
     r"https://vm\.tiktok\.com/(\w+)|https://(?:www\.)?tiktok\.com/(@.+?/video/\d+)"
@@ -93,7 +85,7 @@ class Events(commands.Cog):
 
         content = message.content.lower()
         if content.startswith(config.prefix) and f"{config.prefix}jsk" not in content:
-            cmd_log.debug(f"{message.author.id}: {message.content}")
+            log.info(f"[cmd] {message.author.id}: {message.content}")
 
         await self.handle_triggers(message, content)
         await self.handle_links(message, content)

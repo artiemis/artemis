@@ -181,31 +181,6 @@ except Exception:
         await jsk_py(ctx, argument=codeblocks.codeblock_converter(code))
 
     @dev.command()
-    async def logs(
-        self, ctx: commands.Context, app: Optional[str] = "bot", lines: Optional[int] = "50"
-    ):
-        """
-        Displays logs for various apps.
-        Available: bot, cmds, api, nginx
-
-        """
-        match app:
-            case "bot":
-                args = f"tail -n {lines} artemis.log"
-            case "cmds":
-                args = f"tail -n {lines} data/commands.log"
-            case "api":
-                args = f"tail -n {lines} ../api/api.log"
-            case "nginx":
-                args = f"tail -n {lines} /var/log/nginx/access.log"
-            case _:
-                return await ctx.send("Unrecognized app.")
-
-        ext = "py" if app == "bot" else "txt"
-        file = await utils.run_cmd_to_file(args, f"{app}-logs_{utils.time()}.{ext}")
-        return await ctx.reply(file=file)
-
-    @dev.command()
     async def http(self, ctx: commands.Context, url: str):
         """Debugs HTTP requests."""
         url = url.strip("<>")

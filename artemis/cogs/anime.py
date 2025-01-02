@@ -413,65 +413,6 @@ class Anime(commands.Cog):
         view = ViewPages(ctx, embeds)
         await view.start()
 
-    @commands.command()
-    @commands.cooldown(1, 2, commands.BucketType.default)
-    async def pixiv(self, ctx: commands.Context, url: utils.URL):
-        """Returns the original-res pixiv image for a given art URL for easy sharing/embedding."""
-        PIXIV_RE = r"https:\/\/(?:www\.)?pixiv\.net(?:\/\w+)?\/artworks\/(?P<pid>\d+)\/?"
-
-        async with ctx.typing():
-            match = re.fullmatch(PIXIV_RE, url)
-            if not match:
-                return await ctx.reply("Invalid pixiv URL.")
-
-            pid = match.group("pid")
-            headers = {"User-Agent": self.bot.user_agent, "Referer": "https://www.pixiv.net/"}
-            async with self.bot.session.get(url, headers=headers) as r:
-                if r.status != 200:
-                    return await ctx.reply(f"Pixiv Error: {r.status} {r.reason}")
-                html = await r.text()
-
-            soup = BeautifulSoup(html, "lxml")
-            try:
-                meta = soup.select_one("#meta-preload-data")
-                if not meta:
-                    return await ctx.reply("Pixiv Error: No preload data found.")
-
-                data = meta["content"]
-
-                data = json.loads(data)
-                original_url = data["illust"][pid]["urls"]["original"]
-            except Exception:
-                return await ctx.reply("Pixiv Error: No image data found.")
-
-            async with self.bot.session.get(original_url, headers=headers) as r:
-                if r.status != 200:
-                    return await ctx.reply(f"Pixiv Error: {r.status} {r.reason}")
-                img = await r.read()
-                img_size = len(img)
-                img = BytesIO(img)
-
-            try:
-                adult = any([tag["tag"] == "R-18" for tag in data["illust"][pid]["tags"]["tags"]])
-            except Exception:
-                adult = False
-
-            ext = original_url.split("/")[-1].split(".")[-1].split("?")[0]
-            filename = f"{pid}.{ext}"
-            if adult:
-                filename = f"SPOILER_{filename}"
-
-            if img_size <= utils.MAX_DISCORD_SIZE:
-                dfile = discord.File(img, filename)
-                return await ctx.reply(file=dfile)
-            else:
-                img.name = filename
-                try:
-                    res = await self.bot.litterbox.upload(img, 24)
-                    return await ctx.reply(res)
-                except Exception as err:
-                    return await ctx.reply(f"Upload Error: {err}")
-
     async def search_themes(self, ctx: commands.Context, query: str, theme_type: Theme):
         data = await self.bot.cache.get(f"anithemes:{query}")
         if not data:

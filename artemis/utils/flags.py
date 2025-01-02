@@ -56,11 +56,6 @@ class TTSFlags(FlagConverter):
     lang: str
 
 
-class WiktionaryFlags(FlagConverter):
-    phrase: PosArgument
-    lang: str
-
-
 class DLFlags(FlagConverter):
     url: PosArgument
     format: str

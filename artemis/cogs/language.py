@@ -5,7 +5,6 @@ import re
 from io import BytesIO
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import quote, quote_plus, unquote
-from aiocache import cached
 
 import discord
 import gtts
@@ -16,8 +15,6 @@ from bs4 import BeautifulSoup, Tag
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
-from wiktionaryparser import WiktionaryParser
-from langdetect import detect
 
 from .. import utils
 from ..utils import iso_639
@@ -29,9 +26,8 @@ from ..utils.common import (
 )
 from ..utils.constants import (
     GT_LANGUAGES_EXTRAS,
-    WIKT_LANGUAGES,
 )
-from ..utils.flags import TranslateFlags, TTSFlags, WiktionaryFlags
+from ..utils.flags import TranslateFlags, TTSFlags
 from ..utils.views import ViewPages
 
 if TYPE_CHECKING:
@@ -71,17 +67,8 @@ async def deepl_slash(interaction: discord.Interaction[Artemis], message: discor
         result = await interaction.client.deepl.translate(content, "auto", "EN")
         result_src = result.src.lower()
         billed_characters = result.billed_characters
-    except Exception:
-        src = detect(content)
-        if src == "unknown" or src not in languages:
-            raise ArtemisError("Could not detect language, sorry!")
-        try:
-            result = await interaction.client.api.deepl(content, src, "en")
-            result_src = src
-        except Exception as err:
-            raise ArtemisError(
-                f"Could not translate with any method, epxloding with last error:\n`{err}`"
-            )
+    except Exception as err:
+        raise ArtemisError(f"DeepL Error: `{err}`")
 
     display_src = languages.get(result_src) or result_src
     display_dest = languages.get(result_dest) or result_dest
@@ -125,50 +112,9 @@ async def gt_slash(interaction: discord.Interaction, message: discord.Message):
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 
-# Modded wiktionary parser
-
-
-class ModdedWiktionaryParser(WiktionaryParser):
-    def __init__(self, bot: Artemis):
-        super().__init__()
-        self.include_part_of_speech("romanization")
-        self.include_part_of_speech("prefix")
-        self.include_part_of_speech("suffix")
-        self.bot: Artemis = bot
-        self.headers = {"User-Agent": self.bot.user_agent}
-        self.lock = asyncio.Lock()
-
-    def extract_first_language(self) -> str:
-        lang = self.soup.find("span", {"class": "toctext"})
-        if not lang:
-            lang = self.soup.find("span", {"class": "mw-headline"})
-            if not lang:
-                return None
-        return lang.text.strip()
-
-    async def fetch(self, word: str, language: Optional[str] = None):
-        async with self.bot.session.get(self.url.format(word), headers=self.headers) as r:
-            html = await r.text()
-        html = html.replace(">\n<", "><")
-
-        async with self.lock:
-            self.soup = BeautifulSoup(html, "lxml")
-            self.current_word = word
-            self.clean_html()
-            first_language = self.extract_first_language()
-            language = first_language if not language else language
-            if not language:
-                raise ArtemisError("Cannot extract language from the page, try specifying one?")
-
-            ret = await asyncio.to_thread(self.get_word_data, language.lower())
-            self.soup = None
-            return ret, first_language
-
-
 class Language(commands.Cog):
     def __init__(self, bot: Artemis):
         self.bot: Artemis = bot
-        self.wikt_parser = ModdedWiktionaryParser(self.bot)
 
         for menu in (deepl_slash, gt_slash):
             self.bot.tree.add_command(menu)
@@ -376,24 +322,12 @@ class Language(commands.Cog):
         result_dest = dest.lower()
         billed_characters = None
 
-        # try deepl api first
         try:
             result = await self.bot.deepl.translate(text, src.upper(), dest.upper())
             result_src = result.src.lower()
             billed_characters = result.billed_characters
-        except Exception:
-            # if that fails, try our scraper
-            if src == "auto":
-                src = detect(text)
-                if src == "unknown" or src not in languages:
-                    raise ArtemisError("Could not detect language, try specifying one?")
-            try:
-                result = await self.bot.api.deepl(text, src, dest)
-                result_src = src
-            except Exception as err:
-                raise ArtemisError(
-                    f"Could not translate with any method, epxloding with last error:\n`{err}`"
-                )
+        except Exception as err:
+            raise ArtemisError(f"DeepL Error: `{err}`")
 
         display_src = languages.get(result_src) or result_src
         display_dest = languages.get(result_dest) or result_dest
@@ -526,127 +460,6 @@ class Language(commands.Cog):
                 text=f"{result['thumbs_up']} 👍 {result['thumbs_down']} 👎 • Written by {result['author']}"
             )
             embed.set_author(name="Urban Dictionary", icon_url="https://i.imgur.com/2NDCme4.png")
-            embeds.append(embed)
-
-        view = ViewPages(ctx, embeds)
-        await view.start()
-
-    @commands.command(aliases=["wikt"], usage="[lang:] [l:] <phrase>")
-    @commands.cooldown(1, 2, commands.BucketType.default)
-    async def wiktionary(self, ctx: commands.Context, *, flags: WiktionaryFlags):
-        """
-        Look up words in Wiktionary for different languages.
-
-        Optional flags:
-        `lang` or `l` - Language name or two-letter code to look up the phrase in.
-        Defaults to the first language found on the Wiktionary page.
-
-        If you want to use a language name with spaces, replace spaces with underscores (`_`).
-        [Supported languages (mostly).](https://en.wiktionary.org/wiki/Wiktionary:List_of_languages)
-
-        Example usage:
-        `{prefix}wiktionary apple`
-        `{prefix}wiktionary apple cider`
-        `{prefix}wiktionary l:polish jabłko`
-        `{prefix}wiktionary lang:ja kawaii`
-        """
-
-        favicon = "https://en.wiktionary.org/static/apple-touch/wiktionary/en.png"
-        SEARCH_API = "https://en.wiktionary.org/w/api.php"
-        params = {
-            "action": "opensearch",
-            "format": "json",
-            "formatversion": "2",
-            "search": "",
-            "namespace": "0",
-            "limit": "10",
-        }
-        headers = {"User-Agent": self.bot.user_agent}
-
-        phrase = flags.phrase
-        language = flags.lang
-
-        if language:
-            try:
-                language = WIKT_LANGUAGES[language.lower()]
-            except KeyError:
-                language = language.replace("_", " ").title()
-                if language not in WIKT_LANGUAGES.values():
-                    return await ctx.reply(
-                        f"Language `{language}` not found.\nSee `$help wikt` for supported languages."
-                    )
-        if not phrase:
-            return await ctx.reply("No phrase provided.")
-
-        params["search"] = phrase
-
-        await ctx.typing()
-        async with self.bot.session.get(SEARCH_API, params=params, headers=headers) as r:
-            data = await r.json()
-        links = data[3]
-        if not links:
-            return await ctx.reply(f"Phrase `{phrase}` not found.")
-
-        link = links[0]
-        phrase = link.split("/")[-1]
-        phrase_pretty = unquote(phrase).replace("_", " ")
-
-        entries, first_language = await self.wikt_parser.fetch(phrase, language)
-        if not entries:
-            return await ctx.reply(
-                f"Found suggested phrase `{phrase_pretty}` but not in `{language}`."
-            )
-        if not language:
-            language = first_language or "Unknown"
-
-        embeds = []
-        for entry in entries:
-            embed = discord.Embed(title=phrase_pretty, url=link, colour=0xFEFEFE)
-            embed.set_author(name=f"Wiktionary - {language}", icon_url=favicon)
-
-            etymology = entry.get("etymology")
-            if etymology:
-                embed.add_field(name="Etymology", value=utils.trim(etymology, 1024), inline=False)
-
-            parts_of_speech = entry.get("definitions")
-            if parts_of_speech:
-                max_defs = 3
-                if len(parts_of_speech) == 1:
-                    max_defs = 10
-                for part_of_speech in parts_of_speech[:5]:
-                    name = part_of_speech["partOfSpeech"]
-                    definitions = part_of_speech["text"]
-                    if not definitions:
-                        continue
-                    extra_info = definitions.pop(0)
-
-                    definitions_formatted = []
-                    for def_idx, definiton in enumerate(definitions[:max_defs], start=1):
-                        definitions_formatted.append(f"`{def_idx}.` {definiton}")
-                    if len(definitions) > max_defs:
-                        definitions_formatted.append(
-                            f"[**+ {len(definitions) - max_defs} more**]({link})"
-                        )
-                    definitions_formatted = "\n".join(definitions_formatted)
-
-                    embed.add_field(
-                        name=utils.trim(f"{name}\n{extra_info}", 256),
-                        value=definitions_formatted,
-                        inline=False,
-                    )
-
-            pronunciations = entry.get("pronunciations")
-            if pronunciations and language != "Chinese":
-                texts = pronunciations.get("text")
-                if texts:
-                    texts_formatted = []
-                    for text_idx, text in enumerate(texts[:5], start=1):
-                        texts_formatted.append(f"`{text_idx}.` {text}")
-                    if len(texts) > 5:
-                        texts_formatted.append(f"[**+ {len(texts) - 5} more**]({link})")
-                    texts_formatted = "\n".join(texts_formatted)
-
-                    embed.add_field(name="Pronunciations", value=texts_formatted, inline=False)
             embeds.append(embed)
 
         view = ViewPages(ctx, embeds)

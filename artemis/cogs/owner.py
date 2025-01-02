@@ -119,7 +119,7 @@ class Owner(commands.Cog, command_attrs={"hidden": True}):
     @dev.command()
     @commands.is_owner()
     async def status(
-        self, ctx: commands.Context, emoji: Optional[discord.Emoji], *, name: Optional[str]
+        self, ctx: commands.Context, emoji: Optional[discord.PartialEmoji], *, name: Optional[str]
     ):
         await self.bot.change_presence(activity=discord.CustomActivity(name=name, emoji=emoji))
         with open("data/status.json", "w") as f:

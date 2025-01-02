@@ -13,6 +13,7 @@ catbox = "catbox"
 github = "github"
 cloudflare = "cloudflare"
 openai = "openai"
+deepl = "deepl"
 
 # google cookies for lens API
 [keys.google]

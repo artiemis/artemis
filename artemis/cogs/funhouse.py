@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import http
-import mimetypes
 import random
 import re
-from io import BytesIO
 from typing import TYPE_CHECKING, Optional, TypedDict
 from urllib.parse import quote
 
@@ -16,7 +14,7 @@ from discord.ext import commands
 from .. import utils
 from ..utils import config
 from ..utils.common import ArtemisError, read_json, trim
-from ..utils.views import DropdownView, ViewPages
+from ..utils.views import ViewPages
 
 if TYPE_CHECKING:
     from ..bot import Artemis
@@ -54,71 +52,6 @@ class Funhouse(commands.Cog):
     async def invoke_reddit(self, ctx: commands.Context, subreddit: str):
         reddit = self.bot.get_command("reddit")
         return await reddit(ctx, subreddit)
-
-    @commands.command()
-    async def cat(self, ctx: commands.Context):
-        """Random cat picture."""
-        await ctx.typing()
-        async with self.bot.session.get("https://cataas.com/cat") as r:
-            ext = mimetypes.guess_extension(r.content_type)
-            image = discord.File(BytesIO(await r.read()), f"{utils.time()}.{ext}")
-            await ctx.send(file=image)
-
-    @commands.command()
-    async def dog(self, ctx: commands.Context):
-        """Random dog picture."""
-        async with self.bot.session.get("https://random.dog/woof.json") as r:
-            json = await r.json(content_type=None)
-            await ctx.send(json["url"])
-
-    @commands.command()
-    async def fox(self, ctx: commands.Context):
-        """Random fox picture."""
-        async with self.bot.session.get("https://randomfox.ca/floof/") as r:
-            json = await r.json(content_type=None)
-            await ctx.send(json["image"])
-
-    @commands.command()
-    async def waifu(self, ctx: commands.Context):
-        """Random waifu (anime girl)."""
-        await self.invoke_reddit(ctx, "awwnime")
-
-    @commands.command()
-    async def husbando(self, ctx: commands.Context):
-        """Random husbando (anime boy)."""
-        sub = random.choice(("cuteanimeboys", "bishounen"))
-        await self.invoke_reddit(ctx, sub)
-
-    @commands.command()
-    async def yuri(self, ctx: commands.Context):
-        """Random yuri (anime lesbian couple) art."""
-        await self.invoke_reddit(ctx, "wholesomeyuri")
-
-    @commands.command()
-    async def neko(self, ctx: commands.Context):
-        """Random neko (anime cat girl/boy)."""
-        db = self.bot.get_command("db")
-        await db(ctx, tags="cat_ears")
-
-    @commands.command()
-    @commands.is_nsfw()
-    async def ecchi(self, ctx: commands.Context):
-        """
-        Random ecchi image.
-        NSFW channels only.
-        """
-        db = self.bot.get_command("db")
-        await db(ctx, tags="rating:q score:>10")
-
-    @commands.command()
-    @commands.is_nsfw()
-    async def hentai(self, ctx: commands.Context):
-        """
-        Random hentai image.
-        NSFW channels only.
-        """
-        db = self.bot.get_command("db")
-        await db(ctx, tags="rating:e score:>10")
 
     @commands.command()
     async def hug(self, ctx: commands.Context, member: discord.Member):
@@ -361,165 +294,6 @@ class Funhouse(commands.Cog):
 
         img = random.choice(data)
         await ctx.reply(img["download_url"])
-
-    @commands.group(aliases=["ffxiv"])
-    async def xiv(self, ctx: commands.Context):
-        """Final Fantasy XIV commands."""
-        if ctx.invoked_subcommand is None:
-            await ctx.send("Invalid subcommand passed.")
-
-    @xiv.command(aliases=["chara"])
-    async def character(self, ctx: commands.Context, *, query: str):
-        """Search for player characters in all worlds."""
-        LODESTONE_URL = "https://eu.finalfantasyxiv.com/lodestone/character/"
-
-        await ctx.typing()
-
-        params = {"name": query, "columns": "ID,Name,Server"}
-        async with self.bot.session.get("https://xivapi.com/character/search", params=params) as r:
-            if not r.ok:
-                return await ctx.reply(f"XIV API Error: {r.status} {r.reason}")
-            data = await r.json()
-
-        characters = data["Results"]
-        if not characters:
-            return await ctx.reply("No results found.")
-        elif len(characters) == 1:
-            character = characters[0]
-        else:
-            view = DropdownView(ctx, characters, lambda x: x["Name"], lambda x: x["Server"])
-            character = await view.prompt("Which character?")
-            if not character:
-                return
-            await ctx.typing()
-
-        chid = character["ID"]
-        params = {
-            "columns": "Character.Name,Character.Avatar,Character.Portrait,Character.ActiveClassJob"
-        }
-        async with self.bot.session.get(f"https://xivapi.com/character/{chid}", params=params) as r:
-            if not r.ok:
-                return await ctx.reply(f"XIV API Error: {r.status} {r.reason}")
-            data = await r.json()
-
-        character = data["Character"]
-
-        name = character["Name"]
-        url = LODESTONE_URL + str(chid)
-        portrait_url = character["Portrait"]
-        avatar_url = character["Avatar"]
-
-        embed = discord.Embed(title=name, url=url, color=0x293C66)
-        embed.set_image(url=portrait_url)
-        embed.set_thumbnail(url=avatar_url)
-        embed.set_author(
-            name="The Lodestone",
-            icon_url="https://img.finalfantasyxiv.com/lds/h/0/U2uGfVX4GdZgU1jASO0m9h_xLg.png",
-        )
-
-        active_job = character["ActiveClassJob"]
-        job_name = active_job["Name"].title()
-        job_level = active_job["Level"]
-        embed.description = f"Level **{job_level}**\n{job_name}"
-
-        await ctx.reply(embed=embed)
-
-    @xiv.command()
-    async def item(self, ctx: commands.Context, *, query: str):
-        """Search for items."""
-        await ctx.typing()
-
-        params = {"string": query, "columns": "Name,Url", "indexes": "item"}
-        async with self.bot.session.get("https://xivapi.com/search", params=params) as r:
-            if not r.ok:
-                return await ctx.reply(f"XIV API Error: {r.status} {r.reason}")
-            data = await r.json()
-
-        results = data["Results"]
-        if not results:
-            return await ctx.reply("No results found.")
-        elif len(results) == 1:
-            result = results[0]
-        else:
-            view = DropdownView(ctx, results, lambda x: x["Name"])
-            result = await view.prompt("Which item?")
-            if not result:
-                return
-            await ctx.typing()
-
-        url = "https://xivapi.com" + result["Url"]
-        params = {
-            "columns": "ClassJobCategory.Name,DamageMag,DamagePhys,DefenseMag,DefensePhys,DelayMs,Description,IconHD,ItemUICategory.Name,LevelEquip,LevelItem,Name,Rarity,Stats"
-        }
-        async with self.bot.session.get(url, params=params) as r:
-            if not r.ok:
-                return await ctx.reply(f"XIV API Error: {r.status} {r.reason}")
-            data = await r.json()
-
-        name = data["Name"]
-        category = data["ItemUICategory"]["Name"]
-        icon_url = "https://xivapi.com" + data["IconHD"]
-        # rarity = item_rarity[data["Rarity"]]
-
-        item_level = data["LevelItem"]
-        job_category = data["ClassJobCategory"]["Name"]
-        equip_level = data["LevelEquip"]
-
-        description = data["Description"].replace("\n\n\n\n", "\n\n")
-
-        mag_dmg = ("Magic Damage", int(data["DamageMag"]))
-        phys_dmg = ("Damage", int(data["DamagePhys"]))
-        dmg = max(mag_dmg, phys_dmg, key=lambda x: x[1])
-        mag_def = ("Magic Defense", int(data["DefenseMag"]))
-        phys_def = ("Defense", int(data["DefensePhys"]))
-
-        main_stats = [dmg, mag_def, phys_def]
-        main_stats = [stat for stat in main_stats if stat[1] > 0]
-        main_stats.sort(key=lambda x: x[0])
-        if int(data["DelayMs"]):
-            main_stats.append(("Delay", round(int(data["DelayMs"]) / 1000, 2)))
-
-        if data["Stats"]:
-            bonuses = [(re.sub("([A-Z]+)", r" \1", k), v["NQ"]) for k, v in data["Stats"].items()]
-        else:
-            bonuses = []
-
-        embed = discord.Embed(title=name, color=0x293C66)
-        embed.set_thumbnail(url=icon_url)
-        embed.set_author(
-            name="Eorzea Database",
-            icon_url="https://img.finalfantasyxiv.com/lds/h/0/U2uGfVX4GdZgU1jASO0m9h_xLg.png",
-        )
-        desc = f"{category}\nItem Level **{item_level}**\n\n{job_category or 'All Classes'}\nLv. **{equip_level}**\n\n"
-
-        if description:
-            desc += f"{description}\n\n"
-
-        for bonus in bonuses:
-            desc += f"{bonus[0]}: **+{bonus[1]}**\n"
-
-        embed.description = desc
-
-        for stat in main_stats:
-            embed.add_field(name=stat[0], value=stat[1])
-
-        await ctx.reply(embed=embed)
-
-    @xiv.command(aliases=["fr", "fashion"])
-    async def fashionreport(self, ctx: commands.Context):
-        """Displays the latest Fashion Report requirements."""
-        headers = {"User-Agent": self.bot.real_user_agent}
-
-        await ctx.typing()
-
-        async with self.bot.session.get(
-            f"{config.api_base_url}/xiv/kaiyoko", headers=headers, allow_redirects=False
-        ) as r:
-            title = r.headers.get("x-title")
-
-        embed = discord.Embed(title=title, color=0xE7DFCE)
-        embed.set_image(url=f"{config.api_base_url}/xiv/kaiyoko?includeMeta=false&t={utils.time()}")
-        await ctx.reply(embed=embed)
 
     @commands.command(aliases=["fs"])
     async def foalsay(self, ctx: commands.Context, *, query: str):

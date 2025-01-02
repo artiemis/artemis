@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-import re
 import time
 from enum import Enum
 from io import BytesIO
@@ -12,7 +10,6 @@ import discord
 import feedparser
 import pendulum
 from anilist.async_client import Client as Anilist
-from bs4 import BeautifulSoup
 from discord.ext import commands
 from discord.utils import format_dt
 

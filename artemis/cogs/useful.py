@@ -33,32 +33,6 @@ class Useful(commands.Cog):
     def __init__(self, bot: Artemis):
         self.bot: Artemis = bot
 
-    @commands.command()
-    @commands.cooldown(1, 2, commands.BucketType.default)
-    async def bing(self, ctx: commands.Context, *, query: str):
-        """
-        Bing Search.
-        Uses the RSS feed, useless for complex searches.
-        """
-        await ctx.typing()
-        results = await utils.search_bing(ctx, query)
-        if not results:
-            return await ctx.reply("No results found.")
-
-        embed = discord.Embed(title=f"Search Results for '{query}'", color=0x1E5DD4)
-        embed.set_author(
-            name="Bing", icon_url="https://www.google.com/s2/favicons?domain=bing.com&sz=128"
-        )
-
-        for result in results[:5]:
-            embed.add_field(
-                name=result.title,
-                value=f"[{utils.trim(result.url, 50)}]({result.url})\n{utils.trim(result.description, 120)}",
-                inline=False,
-            )
-
-        await ctx.reply(embed=embed)
-
     @commands.command(aliases=["char"])
     async def charinfo(self, ctx: commands.Context, *, characters: str):
         """Shows you information about a number of characters using unicode data lookup."""

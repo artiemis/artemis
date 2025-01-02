@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 import re
 from io import BytesIO
-from typing import TYPE_CHECKING, Optional
-from urllib.parse import quote, quote_plus, unquote
+from typing import TYPE_CHECKING
+from urllib.parse import quote, quote_plus
 
 import discord
 import gtts

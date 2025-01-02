@@ -21,9 +21,6 @@ log = logging.getLogger("artemis")
 TIKTOK_RE = re.compile(
     r"https://vm\.tiktok\.com/(\w+)|https://(?:www\.)?tiktok\.com/(@.+?/video/\d+)"
 )
-REDDIT_RE = re.compile(
-    r"https?:\/\/(?:www\.)?(?:old\.)?reddit\.com\/r\/\w+\/comments\/(?P<id>[a-zA-Z0-9]+)(?:\/)?(?:[^\s]*)?"
-)
 
 
 class Events(commands.Cog):
@@ -58,18 +55,6 @@ class Events(commands.Cog):
             vid = tiktok_url.group(1) or tiktok_url.group(2)
             self.suppress_embeds(message, 0.1)
             return await message.reply(f"https://vm.dstn.to/{vid}")
-
-        reddit_url = REDDIT_RE.search(content)
-        if reddit_url:
-            pid = reddit_url.group("id")
-            reddit_post = await self.bot.reddit.post(pid=pid)
-
-            if reddit_post:
-                self.suppress_embeds(message, 0.1)
-                embeds = await reddit_post.to_embed(message)
-                return await message.reply(embeds=embeds)
-
-            log.warn(f"Invalid Reddit post URL/ID: {reddit_url.group(0)}")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

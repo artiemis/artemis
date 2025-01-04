@@ -104,7 +104,7 @@ class Artemis(commands.Bot):
 
         await self.load_extensions()
 
-        self.api = API(self, self.keys.api)
+        self.api = API(self, config.internal_api_url, self.keys.api)
         self.catbox = Catbox(self.keys.catbox, session=self.session)
         self.litterbox = Litterbox(session=self.session)
         self.reddit = Reddit(self.session)

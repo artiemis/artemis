@@ -262,7 +262,6 @@ class Language(commands.Cog):
             file = discord.File(buff, f"{src}-{dest}.txt")
 
             return await ctx.reply(
-                "The translation could not fit on the screen, so here's a file:",
                 file=file,
             )
 
@@ -339,7 +338,6 @@ class Language(commands.Cog):
             file = discord.File(buff, f"{display_src}-{display_dest}.txt")
 
             return await ctx.reply(
-                "The translation could not fit on the screen, so here's a file:",
                 file=file,
             )
 
@@ -568,6 +566,9 @@ class Language(commands.Cog):
 
         embeds = []
         for entry in entries:
+            if not entry:
+                continue
+
             embed = discord.Embed(
                 title=entry["word"],
                 description=entry["definition"],

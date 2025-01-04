@@ -156,6 +156,8 @@ class Music(commands.Cog):
 
         ytdl_opts = {**DEFAULT_OPTS, "default_search": "auto", "format": "251/ba*"}
         info_dict = await run_ytdlp(url_or_query, ytdl_opts, download=False)
+        assert info_dict
+
         if info_dict.get("entries"):
             info_dict = info_dict["entries"][0]
 
@@ -212,10 +214,10 @@ class Music(commands.Cog):
         self.queue.append(song)
         await self.real_play()
 
-    @commands.command()
+    @commands.command(name="queue")
     @commands.check(in_voice_channel)
     @commands.check(audio_playing)
-    async def queue(self, ctx: commands.Context):
+    async def queue_cmd(self, ctx: commands.Context):
         if not self.queue:
             return await ctx.reply("The queue is empty.")
 

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-import asyncio
+import base64
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING
 
 import aiohttp
+
+from artemis.utils.common import ArtemisError
 
 
 if TYPE_CHECKING:
@@ -12,37 +14,30 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class DeepLResult:
-    translation: str
+class YandexResult:
+    text: str
+    detected_lang: str | None = None
 
 
 class API:
-    def __init__(self, bot: Artemis, token: str):
-        self.base_url = "http://127.0.0.1:3000"
+    def __init__(self, bot: Artemis, base_url: str, token: str):
+        self.base_url = base_url
         self.token = token
         self.session: aiohttp.ClientSession = bot.session
         self.headers = {"User-Agent": bot.real_user_agent}
         self.authed_headers = {**self.headers, "Authorization": f"Bearer {self.token}"}
 
-    async def _aioread(self, fp):
-        return await asyncio.to_thread(fp.read)
+    async def yandex_ocr(self, image: bytes, mime: str):
+        base64_image = base64.b64encode(image).decode("utf-8")
+        data = {"file": base64_image, "mime": mime}
 
-    async def _request(
-        self,
-        method: str,
-        path: str,
-        authed: bool = False,
-        res_type: Literal["json", "text", "bytes"] = "json",
-        **kwargs,
-    ) -> Any:
-        headers = self.authed_headers if authed else self.headers
-        async with self.session.request(
-            method, self.base_url + path, headers=headers, **kwargs
+        async with self.session.post(
+            self.base_url + "/ocr/yandex", json=data, headers=self.authed_headers
         ) as r:
-            match res_type:
-                case "json":
-                    return await r.json()
-                case "text":
-                    return await r.text()
-                case "bytes":
-                    return await r.read()
+            data = await r.json()
+            if not r.ok:
+                raise ArtemisError(f"Yandex Error: {data.get('error', 'Unknown')}")
+            result = YandexResult(**data)
+            if not result.text:
+                raise ArtemisError("No text detected.")
+            return result

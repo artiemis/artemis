@@ -311,7 +311,7 @@ class Anime(commands.Cog):
         Search for art on Danbooru or show a random image.
         This uses the common tag search logic found on booru imageboards, fuzzy matching for tags is enabled.
         """
-        params = None
+        params = {}
 
         await ctx.typing()
 

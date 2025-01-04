@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import json
-import mimetypes
-import re
 from io import StringIO
 from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
-import magic
 from discord.ext import commands
+
+import discord.ext
+import discord.ext.commands
 
 from .. import utils
 from ..utils.common import ArtemisError, compress_image, get_reply
@@ -79,20 +78,14 @@ class OCR(commands.Cog):
             else:
                 flags = Flags(text=text, source=None, dest=None)
             cmd = self.bot.get_command(translate)
+            assert cmd
             await cmd(ctx, flags=flags)
         else:
             if len(text) > 2000 - 8:
                 return await ctx.reply(file=discord.File(StringIO(text), "ocr.txt"))
             await ctx.reply(self.bot.codeblock(text, ""))
 
-    async def lens_impl(self, ctx: commands.Context[Artemis], url: str | None) -> str:
-        headers = {"User-Agent": self.bot.user_agent}
-        cookies = self.bot.keys.google
-        final_data_re = r"\"([\w-]+)\",\[\[(\[\".*?\"\])\]"
-
-        cur_time = utils.time("ms")
-        upload_url = f"https://lens.google.com/v3/upload?hl=en&re=df&st={cur_time}&ep=gsbubb"
-
+    async def yandex_impl(self, ctx: commands.Context[Artemis], url: str | None):
         await ctx.typing()
 
         if url or ctx.message.attachments:
@@ -113,31 +106,8 @@ class OCR(commands.Cog):
         except Exception as e:
             raise ArtemisError(f"Could not compress image: {e}") from e
 
-        content_type = magic.from_buffer(image, mime=True)
-        ext = mimetypes.guess_extension(content_type)
-
-        files = {"encoded_image": (f"image{ext}", image, content_type)}
-        r = await ctx.bot.httpx_session.post(
-            upload_url,
-            files=files,
-            headers=headers,
-            cookies=cookies,
-            follow_redirects=True,
-        )
-        if r.is_error:
-            print(r.text)
-            raise ArtemisError(f"Google Lens Upload returned {r.status_code} {r.reason_phrase}")
-        html = r.text
-
-        match = re.search(final_data_re, html)
-        if not match:
-            if ctx.author.id == self.bot.owner.id:
-                await ctx.send(file=utils.file(html, "lens.html"))
-            raise ArtemisError("No text detected.")
-        _lang, lines = match.groups()
-
-        text = "\n".join(json.loads(lines))
-        return text
+        result = await self.bot.api.yandex_ocr(image, "image/jpeg")
+        return result
 
     @commands.command(usage="[lang:eng] [l:eng] <url>")
     @commands.cooldown(1, 2, commands.BucketType.default)
@@ -175,23 +145,32 @@ class OCR(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.default)
     async def lens(self, ctx: commands.Context, *, url: Optional[str]):
         """
-        OCR using Google Lens.
+        OCR using Yandex.
         """
-        text = await self.lens_impl(ctx, url)
-        if len(text) > 2000 - 8:
-            return await ctx.reply(file=discord.File(StringIO(text), "lens.txt"))
-        await ctx.reply(self.bot.codeblock(text, ""))
+        result = await self.yandex_impl(ctx, url)
+
+        assert result.detected_lang
+        lang = get_language_name(result.detected_lang) or result.detected_lang
+        msg = f"Detected language: {lang}\n" + self.bot.codeblock(result.text, "")
+
+        if len(msg) > 2000:
+            return await ctx.reply(
+                content=f"Detected language: {lang}",
+                file=discord.File(StringIO(result.text), "lens.txt"),
+            )
+        await ctx.reply(msg)
 
     @commands.command()
     @commands.max_concurrency(1)
     @commands.cooldown(1, 10, commands.BucketType.default)
     async def lensgt(self, ctx: commands.Context, *, url: Optional[str]):
         """
-        OCR using Google Lens and translation using Google Translate.
+        OCR using Yandex and translation using Google Translate.
         """
-        text = await self.lens_impl(ctx, url)
-        flags = Flags(text=text, source=None, dest=None)
+        result = await self.yandex_impl(ctx, url)
+        flags = Flags(text=result.text, source=None, dest=None)
         cmd = self.bot.get_command("gt")
+        assert cmd
         await cmd(ctx, flags=flags)
 
     @commands.command(aliases=["lensdl", "lenstr"])
@@ -199,11 +178,12 @@ class OCR(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.default)
     async def lensdeepl(self, ctx: commands.Context, *, url: Optional[str]):
         """
-        OCR using Google Lens and translation using DeepL.
+        OCR using Yandex and translation using DeepL.
         """
-        text = await self.lens_impl(ctx, url)
-        flags = Flags(text=text, source=None, dest=None)
+        result = await self.yandex_impl(ctx, url)
+        flags = Flags(text=result.text, source=None, dest=None)
         cmd = self.bot.get_command("deepl")
+        assert cmd
         await cmd(ctx, flags=flags)
 
 

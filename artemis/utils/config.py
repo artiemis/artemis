@@ -12,7 +12,6 @@ class Keys:
     cloudflare: str
     openai: str
     deepl: str
-    google: dict[str, str]
 
 
 @dataclass
@@ -21,14 +20,14 @@ class Config:
     prefix: str
     user_agent: str
     real_user_agent: str
-    api_base_url: str
-    cdn_base_url: str
+    internal_api_url: str
+    cdn_url: str
     main_guild_id: int
     dev_guild_id: int
     keys: Keys
 
     def __post_init__(self):
-        self.keys = Keys(**self.keys)  # type: ignore
+        self.keys = Keys(**self.keys)
 
 
 def load_config() -> Config:

@@ -71,13 +71,13 @@ YOUTUBE_BANNED_MESSAGE = """
 """
 
 
-async def run_ytdlp(query: str, opts: dict, download: bool = True) -> dict:
+def run_ytdlp(query: str, opts: dict, download: bool = True):
     if YoutubeIE.suitable(query):
         raise ArtemisError(YOUTUBE_BANNED_MESSAGE)
 
     try:
         with yt_dlp.YoutubeDL(opts) as ytdl:
-            return await asyncio.to_thread(ytdl.extract_info, query, download=download)
+            return asyncio.to_thread(ytdl.extract_info, query, download=download)
     except yt_dlp.utils.YoutubeDLError as error:
         raise ArtemisError(format_ytdlp_error(error))
 
@@ -259,6 +259,7 @@ class Media(commands.Cog):
 
         async with ctx.typing():
             info_dict = await run_ytdlp(url, ytdl_opts, download=False)
+            assert info_dict
 
             title = info_dict.get("title")
             url = info_dict["url"]
@@ -296,6 +297,7 @@ class Media(commands.Cog):
 
         async with ctx.typing():
             info_dict = await run_ytdlp(url, ytdl_opts, download=False)
+            assert info_dict
 
             title = info_dict["title"]
             url = info_dict["url"]
@@ -347,41 +349,12 @@ class Media(commands.Cog):
         `{prefix}dl t:120-160 https://www.reddit.com/r/anime/comments/f86otf/`
         """
         path: Path = None
-        msg: discord.Message = None
-        finished = False
-        state = "downloading"
         template = TEMP_DIR.joinpath("%(id)s.%(ext)s").as_posix()
 
         url = flags.url
         format = flags.format
         trim = flags.trim
         ss, to = flags.ss, None
-
-        async def _monitor_download():
-            nonlocal msg, state
-            while not finished:
-                content = "Processing..."
-                if state == "downloading":
-                    match = None
-                    files = list(TEMP_DIR.iterdir())
-                    if files:
-                        match = max(files, key=lambda f: f.stat().st_size)
-                    if match:
-                        size = match.stat().st_size
-                        size = humanize.naturalsize(size, binary=True)
-                        content = f":arrow_down: `Downloading...` {size}"
-                    else:
-                        content = ":arrow_down: `Downloading...`"
-                elif state == "uploading":
-                    content = ":arrow_up: `Uploading...`"
-
-                if not msg:
-                    msg = await ctx.reply(content)
-                else:
-                    msg = await msg.edit(content=content)
-                await asyncio.sleep(1)
-            if msg:
-                await msg.delete()
 
         try:
             url = url.strip("<>")
@@ -442,10 +415,8 @@ class Media(commands.Cog):
                 ytdl_opts["format"] = format
 
             info_dict = None
-            # asyncio.create_task(monitor_download())
             async with ctx.typing():
                 info_dict = await run_ytdlp(url, ytdl_opts)
-            state = "uploading"
 
             title = utils.romajify(info_dict.get("title"))
             vid_id = info_dict.get("id")
@@ -483,7 +454,6 @@ class Media(commands.Cog):
         except Exception as err:
             raise err
         finally:
-            finished = True
             if path and path.exists():
                 path.unlink()
 
@@ -568,7 +538,7 @@ class Media(commands.Cog):
             if year:
                 title += f" ({year})"
             author = cells[1].text
-            mirrors = [cell.a["href"] for cell in cells[9:11]]
+            mirrors = [cell.a["href"] for cell in cells[9:11] if cell.a]
             ext = cells[8].text
             entries.append((title, author, mirrors, ext))
 
@@ -589,9 +559,11 @@ class Media(commands.Cog):
                     continue
 
                 soup = BeautifulSoup(html, "lxml")
-                url = soup.find("a", text="GET")["href"]
-                if not url:
+                a = soup.find("a", text="GET")
+                if not a or not a.has_attr("href"):
                     continue
+
+                url = a["href"]
 
                 try:
                     async with self.bot.session.get(url, headers=headers) as r:

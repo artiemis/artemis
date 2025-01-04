@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class ShortTime(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument: str) -> pendulum.DateTime:
+    async def convert(self, _: commands.Context, argument: str):
         return parse_short_time(argument)
 
 

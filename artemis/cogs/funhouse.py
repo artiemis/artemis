@@ -51,6 +51,7 @@ class Funhouse(commands.Cog):
 
     async def invoke_reddit(self, ctx: commands.Context, subreddit: str):
         reddit = self.bot.get_command("reddit")
+        assert reddit
         return await reddit(ctx, subreddit)
 
     @commands.command()
@@ -144,6 +145,7 @@ class Funhouse(commands.Cog):
             banner_colour = user.accent_colour
             if banner_colour:
                 colour_cmd = self.bot.get_command("color")
+                assert colour_cmd
                 return await colour_cmd(ctx, colour=banner_colour)
             else:
                 raise ArtemisError(f"{user.display_name} does not have a custom banner set.")
@@ -223,9 +225,14 @@ class Funhouse(commands.Cog):
             if not title:
                 title = f"{post.select_one('.post_author').text} {post.select_one('time').text} UTC"
 
-            post_url = post.find(
+            post_a = post.find(
                 "a", attrs={"href": re.compile(r"https://desuarchive.org/.*?/thread/")}
-            )["href"]
+            )
+
+            if not post_a:
+                continue
+
+            post_url = post_a["href"]
             board = post_url.split("/")[-4]
             if board in banned_boards:
                 continue
@@ -397,7 +404,7 @@ class Funhouse(commands.Cog):
         embed.set_author(
             name="#" + result["number"], icon_url="https://www.pokemon.com/favicon.ico"
         )
-        embed.set_image(url=f"{config.cdn_base_url}/pokedex/{result['id']:>03}.png")
+        embed.set_image(url=f"{config.cdn_url}/pokedex/{result['id']:>03}.png")
 
         types = ", ".join([t.title() for t in result["type"]])
         abilities = ", ".join(result["abilities"])

@@ -496,6 +496,7 @@ class Useful(commands.Cog):
         soup = BeautifulSoup(html, "lxml")
 
         preview_img = soup.select_one(".CbirPreview-Image")
+        assert preview_img
         preview_img_url = preview_img["src"]
 
         embed = discord.Embed(title="Uploaded image", color=0xFDDE55, url=r.url)
@@ -526,8 +527,10 @@ class Useful(commands.Cog):
 
         for result in results[:3]:
             a = result.select_one(".CbirSites-ItemTitle a")
-            title = a.text
+            if not a:
+                continue
 
+            title = a.text
             url = a["href"]
             url = f"[{utils.trim(url.split('//', 1)[-1], 50)}]({url})"
             description = result.select_one(".CbirSites-ItemDescription").text
@@ -663,6 +666,7 @@ class Useful(commands.Cog):
 
         satellite_data = result.select("td")
         satellite_pos = satellite_data[0].text.strip()
+        assert satellite_data[1].a
         satellite_url = satellite_data[1].a["href"]
 
         sat_pos = re.search(r"(\d{1,3}(?:\.\d)?).*?((?:E|W))", satellite_pos)

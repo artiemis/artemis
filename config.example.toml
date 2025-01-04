@@ -2,8 +2,8 @@ token = "token"
 prefix = "!"
 user_agent = "user_agent"
 real_user_agent = "real_user_agent"
-api_base_url = "api_base_url"
-cdn_base_url = "cdn_base_url"
+internal_api_url = "internal_api_url"
+cdn_url = "cdn_url"
 main_guild_id = 1
 dev_guild_id = 1
 
@@ -14,6 +14,3 @@ github = "github"
 cloudflare = "cloudflare"
 openai = "openai"
 deepl = "deepl"
-
-# google cookies for lens API
-[keys.google]

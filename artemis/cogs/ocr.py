@@ -78,7 +78,6 @@ class OCR(commands.Cog):
             else:
                 flags = Flags(text=text, source=None, dest=None)
             cmd = self.bot.get_command(translate)
-            assert cmd
             await cmd(ctx, flags=flags)
         else:
             if len(text) > 2000 - 8:
@@ -129,11 +128,9 @@ class OCR(commands.Cog):
         """
         await self.ocr_impl(ctx, flags, translate="gt")
 
-    @commands.command(
-        aliases=["ocrdl"], usage="[source:auto] [lang:eng] [l:eng] [s:auto] [dest:en] [d:en] <url>"
-    )
+    @commands.command(usage="[source:auto] [lang:eng] [l:eng] [s:auto] [dest:en] [d:en] <url>")
     @commands.cooldown(1, 2, commands.BucketType.default)
-    async def ocrdeepl(self, ctx: commands.Context, *, flags: Optional[OCRTranslateFlags]):
+    async def ocrdl(self, ctx: commands.Context, *, flags: Optional[OCRTranslateFlags]):
         """
         OCR using tesseract and translation using DeepL.
         Takes $deepl and $ocr flags combined.
@@ -149,7 +146,6 @@ class OCR(commands.Cog):
         """
         result = await self.yandex_impl(ctx, url)
 
-        assert result.detected_lang
         lang = get_language_name(result.detected_lang) or result.detected_lang
         msg = f"Detected language: {lang}\n" + self.bot.codeblock(result.text, "")
 
@@ -170,20 +166,18 @@ class OCR(commands.Cog):
         result = await self.yandex_impl(ctx, url)
         flags = Flags(text=result.text, source=None, dest=None)
         cmd = self.bot.get_command("gt")
-        assert cmd
         await cmd(ctx, flags=flags)
 
-    @commands.command(aliases=["lensdl", "lenstr"])
+    @commands.command(aliases=["lenstr"])
     @commands.max_concurrency(1)
     @commands.cooldown(1, 10, commands.BucketType.default)
-    async def lensdeepl(self, ctx: commands.Context, *, url: Optional[str]):
+    async def lensdl(self, ctx: commands.Context, *, url: Optional[str]):
         """
         OCR using Yandex and translation using DeepL.
         """
         result = await self.yandex_impl(ctx, url)
         flags = Flags(text=result.text, source=None, dest=None)
         cmd = self.bot.get_command("deepl")
-        assert cmd
         await cmd(ctx, flags=flags)
 
 

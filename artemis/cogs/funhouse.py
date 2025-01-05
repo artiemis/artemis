@@ -49,11 +49,6 @@ class Funhouse(commands.Cog):
             description=description, timestamp=pendulum.now("UTC"), colour=discord.Colour.random()
         )
 
-    async def invoke_reddit(self, ctx: commands.Context, subreddit: str):
-        reddit = self.bot.get_command("reddit")
-        assert reddit
-        return await reddit(ctx, subreddit)
-
     @commands.command()
     async def hug(self, ctx: commands.Context, member: discord.Member):
         """Hug someone."""
@@ -110,7 +105,7 @@ class Funhouse(commands.Cog):
         """
         if not user:
             user = ctx.message.author
-        if user.display_avatar.is_animated():
+        elif user.display_avatar.is_animated():
             url = gif = user.display_avatar.replace(size=4096, format="gif").url
             static = user.display_avatar.replace(size=4096, format="png").url
             description = f"[gif]({gif}) | [static]({static})"
@@ -145,7 +140,6 @@ class Funhouse(commands.Cog):
             banner_colour = user.accent_colour
             if banner_colour:
                 colour_cmd = self.bot.get_command("color")
-                assert colour_cmd
                 return await colour_cmd(ctx, colour=banner_colour)
             else:
                 raise ArtemisError(f"{user.display_name} does not have a custom banner set.")
@@ -164,28 +158,6 @@ class Funhouse(commands.Cog):
         embed.set_image(url=url)
         embed.set_author(name=user.display_name, icon_url=user.display_avatar.url)
         await ctx.reply(embed=embed)
-
-    @commands.group(name="reddit", invoke_without_command=True)
-    async def reddit_(self, ctx: commands.Context, subreddit: str = "all"):
-        """Shows a random post from reddit or a given subreddit."""
-
-        async with ctx.typing():
-            post = await self.bot.reddit.random(subreddit)
-            embeds = await post.to_embed(ctx.message)
-
-        await ctx.reply(embeds=embeds)
-
-    @reddit_.command()
-    async def show(self, ctx: commands.Context, pid: str):
-        """Displays a rich reddit post embed for a given post ID."""
-        await ctx.typing()
-
-        post = await self.bot.reddit.post(pid=pid)
-        if not post:
-            raise ArtemisError("Invalid post ID.")
-
-        embeds = await post.to_embed(ctx.message)
-        await ctx.reply(embeds=embeds)
 
     @commands.command(aliases=["4chan", "da"])
     @commands.cooldown(1, 2, commands.BucketType.default)
@@ -239,6 +211,10 @@ class Funhouse(commands.Cog):
             board_url = f"https://desuarchive.org/{board}/"
 
             description = post.select_one(".text")
+
+            if not description:
+                continue
+
             for br in description.select("br"):
                 br.replace_with("\n")
             description = trim(re.sub(r"(>)(\w.*)", r"\g<1> \g<2>", description.text), 4096)

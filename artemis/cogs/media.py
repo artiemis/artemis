@@ -7,11 +7,10 @@ import struct
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 from urllib.parse import quote_plus
 
 import discord
-import humanize
 import pendulum
 import yt_dlp
 from bs4 import BeautifulSoup
@@ -180,8 +179,8 @@ class Media(commands.Cog):
 
         async def process(data: list[dict], lang: str = None) -> discord.File:
             if lang:
-                found = discord.utils.find(lambda x: x["lang"] == lang)
-                if not data:
+                found = discord.utils.find(lambda x: x["lang"] == lang, data)
+                if not found:
                     raise ArtemisError("No subtitles available for that language.")
                 return await process_one(found)
             elif len(data) == 1:
@@ -259,7 +258,6 @@ class Media(commands.Cog):
 
         async with ctx.typing():
             info_dict = await run_ytdlp(url, ytdl_opts, download=False)
-            assert info_dict
 
             title = info_dict.get("title")
             url = info_dict["url"]
@@ -297,7 +295,6 @@ class Media(commands.Cog):
 
         async with ctx.typing():
             info_dict = await run_ytdlp(url, ytdl_opts, download=False)
-            assert info_dict
 
             title = info_dict["title"]
             url = info_dict["url"]
@@ -364,7 +361,7 @@ class Media(commands.Cog):
 
             def match_filter(info_dict, incomplete):
                 nonlocal url
-                if "#_sudo" in url and ctx.author.id == self.bot.owner_id:
+                if "#_sudo" in cast(str, url) and ctx.author.id == self.bot.owner_id:
                     return None
                 duration = info_dict.get("duration")
                 filesize = info_dict.get("filesize") or info_dict.get("filesize_approx")
@@ -403,6 +400,8 @@ class Media(commands.Cog):
                 ytdl_opts["format"] = f"({ytdl_opts['format']})[protocol!*=dash][protocol!*=m3u8]"
                 ytdl_opts["external_downloader"] = {"default": "ffmpeg"}
                 ytdl_opts["external_downloader_args"] = args
+
+                assert ss and to
 
                 diff = to - ss
                 if diff > 3600:
@@ -456,44 +455,6 @@ class Media(commands.Cog):
         finally:
             if path and path.exists():
                 path.unlink()
-
-    @commands.command()
-    @commands.cooldown(1, 1, commands.BucketType.default)
-    async def dislikes(self, ctx: commands.Context, url: str):
-        """Shows some statistics for a YouTube video including dislikes using Return YouTube Dislikes API."""
-        YT_RE = r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)([\w-]+)"
-
-        if len(url) == 11:
-            vid = url
-        else:
-            m = re.search(YT_RE, url)
-            if not m:
-                raise ArtemisError("Invalid YouTube URL or ID.")
-            vid = m.group(1)
-
-        params = {"videoId": vid}
-
-        async with ctx.typing():
-            async with self.bot.session.get(
-                "https://returnyoutubedislikeapi.com/votes", params=params
-            ) as r:
-                if not r.ok:
-                    if r.status == 404:
-                        raise ArtemisError("Video not found.")
-                    elif r.status == 400:
-                        raise ArtemisError("Invalid video ID.")
-                    else:
-                        raise ArtemisError(
-                            f"Return YouTube Dislikes API returned {r.status} {r.reason}"
-                        )
-                data = await r.json()
-
-        views = humanize.intcomma(data["viewCount"])
-        likes = humanize.intcomma(data["likes"])
-        dislikes = humanize.intcomma(data["dislikes"])
-
-        msg = f"**{views}** views\n**{likes}** likes\n**{dislikes}** dislikes"
-        await ctx.reply(msg)
 
     @commands.command(aliases=["lg"])
     @commands.cooldown(1, 2, commands.BucketType.default)

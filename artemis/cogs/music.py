@@ -108,7 +108,10 @@ class Music(commands.Cog):
         ) as r:
             html = await r.text()
 
-        data = re.search(r"var\s?ytInitialData\s?=\s?(\{.*?\});", html).group(1)
+        data_res = re.search(r"var\s?ytInitialData\s?=\s?(\{.*?\});", html)
+        if not data_res:
+            return []
+        data = data_res.group(1)
         data = json.loads(data)
         videos = data["contents"]["twoColumnSearchResultsRenderer"]["primaryContents"][
             "sectionListRenderer"
@@ -156,7 +159,6 @@ class Music(commands.Cog):
 
         ytdl_opts = {**DEFAULT_OPTS, "default_search": "auto", "format": "251/ba*"}
         info_dict = await run_ytdlp(url_or_query, ytdl_opts, download=False)
-        assert info_dict
 
         if info_dict.get("entries"):
             info_dict = info_dict["entries"][0]

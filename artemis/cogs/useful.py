@@ -4,7 +4,6 @@ import json
 import re
 import unicodedata
 from io import BytesIO, StringIO
-from math import ceil, log2
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import quote, urlencode
 
@@ -356,7 +355,8 @@ class Useful(commands.Cog):
         if "Sorry" in data:
             return await ctx.reply(data.split("\n\n")[0])
 
-        loc = LOC_RE.search(data).group(1)
+        loc_res = LOC_RE.search(data)
+        loc = loc_res.group(1) if loc_res else ""
         text = "\n".join(data.split("\n")[1:7])
         wrapped = self.bot.codeblock(text, "py")
 
@@ -395,153 +395,6 @@ class Useful(commands.Cog):
         if len(text) > 2000:
             await ctx.reply(file=discord.File(StringIO(text), "decoded_QR_code.txt"))
         await ctx.reply(text)
-
-    @commands.command(name="map", aliases=["maps"])
-    @commands.cooldown(1, 2, commands.BucketType.default)
-    async def _map(self, ctx: commands.Context, *, query: str):
-        """
-        Return a static map for a given location.
-
-        Examples:
-        `{prefix}map statue of liberty`
-        `{prefix}map cieszyn, stawowa`
-        """
-        GEOCODER_API = "https://nominatim.openstreetmap.org/search"
-        HEADERS = {"User-Agent": self.bot.real_user_agent, "Accept-Language": "en-US"}
-        STATIC_MAP_URL = (
-            "https://tyler-demo.herokuapp.com/?lat={lat}&lon={lon}&width=800&height=600&zoom={zoom}"
-        )
-
-        results = await self.bot.cache.get(f"geocoder:{query}")
-        if not results:
-            await ctx.typing()
-            params = {"q": query, "format": "jsonv2"}
-            async with self.bot.session.get(GEOCODER_API, params=params, headers=HEADERS) as r:
-                results = await r.json()
-                await self.bot.cache.set(f"geocoder:{query}", results, ttl=60)
-
-        if not results:
-            raise ArtemisError("No results found.")
-        elif len(results) == 1:
-            result = results[0]
-        else:
-            view = DropdownView(
-                ctx,
-                results,
-                lambda x: x.get("display_name") or "Unknown display name.",
-                lambda x: f"{x['osm_type']} {x['osm_id']}",
-                "Choose place...",
-            )
-            result = await view.prompt()
-            if not result:
-                return
-            await ctx.typing()
-
-        lat = result["lat"]
-        lon = result["lon"]
-        address = result["display_name"]
-        osm_id = result["osm_id"]
-        osm_type = result["osm_type"]
-        bbox: list[float] = result["boundingbox"]
-
-        lon_diff = abs(float(bbox[2]) - float(bbox[3]))
-        lat_diff = abs(float(bbox[0]) - float(bbox[1]))
-        zoom_lon = ceil(log2(360 * 2 / lon_diff))
-        zoom_lat = ceil(log2(180 * 2 / lat_diff))
-        zoom = max(zoom_lon, zoom_lat) - 1
-        zoom = max(0, min(zoom, 19))
-
-        url = f"https://www.openstreetmap.org/{osm_type}/{osm_id}"
-
-        async with self.bot.session.get(STATIC_MAP_URL.format(lat=lat, lon=lon, zoom=zoom)) as r:
-            data = await r.read()
-
-        data = BytesIO(data)
-        file = discord.File(data, f"{osm_id}.png")
-
-        embed = discord.Embed(title=utils.trim(address, 256), url=url, color=0xFEFEFE)
-        embed.set_image(url=f"attachment://{osm_id}.png")
-        embed.set_footer(
-            text="Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright"
-        )
-
-        await ctx.reply(embed=embed, file=file)
-
-    @commands.command()
-    @commands.cooldown(1, 2, commands.BucketType.default)
-    async def reverse(self, ctx: commands.Context, *, url: Optional[utils.URL]):
-        """
-        Yandex Reverse Image Search.
-        """
-        headers = {"User-Agent": self.bot.user_agent}
-        bad_link_msg = "Couldn't upload image. Try uploading a different one."
-
-        await ctx.typing()
-
-        if not ctx.message.attachments and not url:
-            return await ctx.reply("Please send me a valid image first!")
-        elif ctx.message.attachments:
-            url = ctx.message.attachments[0].url
-
-        async with self.bot.session.get(
-            f"https://yandex.com/images/search?url={url}&rpt=imageview", headers=headers
-        ) as r:
-            if not r.ok:
-                return await ctx.reply(f"Yandex API Error: {r.status} {r.reason}")
-            html = await r.text()
-
-        if bad_link_msg in html:
-            return await ctx.reply(bad_link_msg)
-
-        soup = BeautifulSoup(html, "lxml")
-
-        preview_img = soup.select_one(".CbirPreview-Image")
-        assert preview_img
-        preview_img_url = preview_img["src"]
-
-        embed = discord.Embed(title="Uploaded image", color=0xFDDE55, url=r.url)
-        embed.set_thumbnail(url=preview_img_url)
-        embed.set_author(
-            name="Yandex",
-            icon_url="https://yastatic.net/s3/web4static/_/v2/oxjfXL1EO-B5Arm80ZrL00p0al4.png",
-        )
-
-        tags = soup.select(".CbirTags a")
-        if tags:
-            tags_fmt = []
-            for tag in tags:
-                href = "https://yandex.com" + tag["href"]
-                tags_fmt.append(f"[{tag.span.text}]({href})")
-            embed.add_field(
-                name="Image appears to contain", value=", ".join(tags_fmt), inline=False
-            )
-
-        sizes = soup.select(".CbirOtherSizes a")
-        if sizes:
-            sizes_fmt = []
-            for size in sizes[:4]:
-                sizes_fmt.append(f"[{size.span.text}]({size['href']})")
-            embed.add_field(name="Other image sizes", value=", ".join(sizes_fmt), inline=False)
-
-        results = soup.select(".CbirSites-ItemInfo")
-
-        for result in results[:3]:
-            a = result.select_one(".CbirSites-ItemTitle a")
-            if not a:
-                continue
-
-            title = a.text
-            url = a["href"]
-            url = f"[{utils.trim(url.split('//', 1)[-1], 50)}]({url})"
-            description = result.select_one(".CbirSites-ItemDescription").text
-            description = description if "http" not in description else None
-
-            value = f"{url}\n{description}" if description else url
-            embed.add_field(
-                name=utils.trim(title, 256), value=utils.trim(value, 1024), inline=False
-            )
-
-        await ctx.reply(embed=embed)
 
     @cached(ttl=6 * 60 * 60)
     async def get_lyngsat_cse_url(self):
@@ -666,7 +519,6 @@ class Useful(commands.Cog):
 
         satellite_data = result.select("td")
         satellite_pos = satellite_data[0].text.strip()
-        assert satellite_data[1].a
         satellite_url = satellite_data[1].a["href"]
 
         sat_pos = re.search(r"(\d{1,3}(?:\.\d)?).*?((?:E|W))", satellite_pos)

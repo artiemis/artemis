@@ -178,7 +178,6 @@ except Exception:
             code = silencer + code
 
         jsk_py = self.bot.get_command("jsk py")
-        assert jsk_py
         await jsk_py(ctx, argument=codeblocks.codeblock_converter(code))
 
     @dev.command()

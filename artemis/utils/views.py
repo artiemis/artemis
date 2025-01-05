@@ -127,6 +127,8 @@ class ViewPages(BaseView):
 
 
 class BaseDropdown(discord.ui.Select):
+    view: BaseView
+
     def __init__(self, items: list, label_key, description_key, placeholder: str, max_values: int):
         self.items = items
 

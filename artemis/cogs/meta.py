@@ -16,7 +16,6 @@ from discord.utils import format_dt, snowflake_time
 from humanize import naturalsize
 
 from ..utils.common import ArtemisError, check_for_ssrf, is_valid_url
-from ..utils.views import BaseView
 
 if TYPE_CHECKING:
     from ..bot import Artemis
@@ -173,17 +172,6 @@ class Meta(commands.Cog):
         """
         msg = f"`{self.to_discord_timestamp(datetime)}`"
         await ctx.reply(msg)
-
-    @commands.command(aliases=["ffmpeg"])
-    async def getffmpeg(self, ctx: commands.Context):
-        """ffmpeg-dl script information."""
-        view = BaseView(ctx)
-        view.add_item(
-            discord.ui.Button(
-                label="Download", url="https://github.com/artiemis/get-ffmpeg/releases/latest"
-            )
-        )
-        await ctx.reply("https://github.com/artiemis/get-ffmpeg", view=view)
 
 
 async def setup(bot: Artemis):

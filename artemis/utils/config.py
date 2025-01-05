@@ -5,7 +5,7 @@ from .common import read_toml
 
 
 @dataclass
-class Keys:
+class Secrets:
     api: str
     catbox: str
     github: str
@@ -24,10 +24,10 @@ class Config:
     cdn_url: str
     main_guild_id: int
     dev_guild_id: int
-    keys: Keys
+    secrets: Secrets
 
     def __post_init__(self):
-        self.keys = Keys(**self.keys)
+        self.secrets = Secrets(**self.secrets)
 
 
 def load_config() -> Config:

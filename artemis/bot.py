@@ -19,7 +19,6 @@ from discord.ext.commands.cooldowns import BucketType
 from .cogs import EXTENSIONS
 
 from . import utils
-from .utils.reddit import Reddit
 from .utils.api import API
 from .utils.catbox import Catbox, Litterbox
 from .utils.deepl import DeepL
@@ -76,7 +75,7 @@ class Artemis(commands.Bot):
 
         self.user_agent: str = config.user_agent
         self.real_user_agent: str = config.real_user_agent
-        self.keys = config.keys
+        self.secrets = config.secrets
 
         self.pink = discord.Colour(0xFFCFF1)
         self.invisible = discord.Colour(0x2F3136)
@@ -104,11 +103,10 @@ class Artemis(commands.Bot):
 
         await self.load_extensions()
 
-        self.api = API(self, config.internal_api_url, self.keys.api)
-        self.catbox = Catbox(self.keys.catbox, session=self.session)
+        self.api = API(self, config.internal_api_url, self.secrets.api)
+        self.catbox = Catbox(self.secrets.catbox, session=self.session)
         self.litterbox = Litterbox(session=self.session)
-        self.reddit = Reddit(self.session)
-        self.deepl = DeepL(self, self.keys.deepl)
+        self.deepl = DeepL(self, self.secrets.deepl)
 
         await self.maybe_send_restarted()
 

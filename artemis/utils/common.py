@@ -547,9 +547,11 @@ async def get_file_from_attachment_or_url(
                 return await r.read()
         except BaseException as err:
             raise ArtemisError("An error occured when trying to connect to the given URL.") from err
+    else:
+        raise ArtemisError("Unreachable code.")
 
 
-T = TypeVar("T")
+T = TypeVar("T", str, dict)
 
 
 def fuzzy_search(

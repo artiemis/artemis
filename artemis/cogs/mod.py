@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 import discord
 import pendulum
 from discord.ext import commands
+from pendulum import DateTime
 
 from ..utils.common import ArtemisError, parse_short_time
 
@@ -67,7 +68,7 @@ class Mod(commands.Cog):
         `{prefix}mute Artemis 2d12h for being nosy`
         """
         max_timeout = pendulum.now("UTC").add(days=28)
-        if time > max_timeout:
+        if cast(DateTime, time) > max_timeout:
             raise ArtemisError("Mute time cannot exceed 28 days.")
 
         if not reason:
@@ -137,7 +138,11 @@ class Mod(commands.Cog):
             await webhook.send(
                 content=message.content,
                 username=message.author.display_name,
-                avatar_url=message.author.avatar.url,
+                avatar_url=(
+                    message.author.avatar.url
+                    if message.author.avatar
+                    else message.author.default_avatar.url
+                ),
                 files=files,
                 embeds=embeds,
             )

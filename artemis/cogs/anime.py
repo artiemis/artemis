@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from enum import Enum
 from io import BytesIO
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 from urllib.parse import quote
 
 import discord
@@ -129,7 +129,7 @@ class Anime(commands.Cog):
         """Search for anime."""
         await ctx.typing()
 
-        results, _ = await self.anilist.search_anime(query, 10)
+        results, _ = await self.anilist.search_anime(query, 10)  # type: ignore wrong return type
         if not results:
             return await ctx.reply("No results found.")
 
@@ -161,7 +161,7 @@ class Anime(commands.Cog):
         """Search for manga."""
         await ctx.typing()
 
-        results, _ = await self.anilist.search_manga(query, 10)
+        results, _ = await self.anilist.search_manga(query, 10)  # type: ignore wrong return type
         if not results:
             return await ctx.reply("No results found.")
 
@@ -192,7 +192,7 @@ class Anime(commands.Cog):
     async def character(self, ctx: commands.Context, *, query: str):
         """Search for anime and manga characters."""
         await ctx.typing()
-        results, _ = await self.anilist.search_character(query, 10)
+        results, _ = await self.anilist.search_character(query, 10)  # type: ignore wrong return type
         if not results:
             return await ctx.reply("No results found.")
 
@@ -234,7 +234,7 @@ class Anime(commands.Cog):
 
         await ctx.typing()
 
-        if "discord" in url:
+        if "discord" in cast(str, url):
             async with self.bot.session.get(url) as r:
                 if r.status != 200:
                     return await ctx.reply(f"Discord CDN Error: {r.status} {r.reason}")

@@ -7,7 +7,7 @@ cdn_url = "cdn_url"
 main_guild_id = 1
 dev_guild_id = 1
 
-[keys]
+[secrets]
 api = "api"
 catbox = "catbox"
 github = "github"

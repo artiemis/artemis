@@ -87,7 +87,7 @@ def build_anilist_embed(result: Anime | Manga) -> discord.Embed:
     if start_date and get(start_date, "year"):
         embed.add_field(name="Release Year", value=start_date.year, inline=True)
 
-    if result is Anime:
+    if isinstance(result, Anime):
         nextairing = get(result, "next_airing", None)
         episodes = get(result, "episodes") or get(nextairing, "episode")
         duration = get(result, "duration")
@@ -102,7 +102,7 @@ def build_anilist_embed(result: Anime | Manga) -> discord.Embed:
                 str(duration) + " mins per ep." if media_format == "TV" else str(duration) + " mins"
             )
             embed.add_field(name="Duration", value=duration)
-    elif result is Manga:
+    elif isinstance(result, Manga):
         volumes = get(result, "volumes")
         chapters = get(result, "chapters")
 

@@ -1,6 +1,6 @@
 __pycache__/
 temp/
-env/
+.venv/
 config.prod.toml
 config.dev.toml
 status.json

@@ -1,4 +1,4 @@
-ENV=env
+ENV=.venv
 BIN=$(ENV)/bin
 PYTHON=$(BIN)/python
 PIP=$(BIN)/pip
@@ -6,7 +6,7 @@ PIP=$(BIN)/pip
 .PHONY: venv install dev watch clean
 
 venv:
-	python3 -m venv env
+	python3 -m venv .venv
 
 install:
 	$(PIP) install -Ur requirements.txt
@@ -18,4 +18,4 @@ watch:
 	pnpx nodemon -e py,toml -x $(PYTHON) -m artemis.bot
 
 clean:
-	rm -rf env
+	rm -rf .venv

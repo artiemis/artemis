@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "artemis",
-      script: "./env/bin/python",
+      script: "./.venv/bin/python",
       args: "-m artemis.bot",
       time: true,
       env: {

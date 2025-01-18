@@ -25,6 +25,6 @@ pm2 start
 
 ### Launching prod (manual)
 ```
-. env/bin/activate
+. .venv/bin/activate
 ENV=production python3 -m artemis.bot
 ```

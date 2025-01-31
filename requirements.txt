@@ -1,3 +1,4 @@
+aiohttp
 wheel
 aiocache
 aiosqlite
@@ -23,3 +24,4 @@ yt-dlp
 h2
 aiogoogletrans
 setuptools
+legacy-cgi

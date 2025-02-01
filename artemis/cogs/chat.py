@@ -107,10 +107,10 @@ class Chat(commands.Cog):
         self.lock = asyncio.Lock()
 
     def read_prompt(self):
-        return Path("data/prompt").read_text()
+        return Path("temp/prompt").read_text() if Path("temp/prompt").exists() else ""
 
     def write_prompt(self, prompt: str):
-        Path("data/prompt").write_text(prompt)
+        Path("temp/prompt").write_text(prompt)
 
     def replace_emojis(self, text: str) -> str:
         return EMOJI_RE.sub(lambda match: emoji_map[match.group(0)], text)
@@ -124,7 +124,11 @@ class Chat(commands.Cog):
         return content
 
     def add_memory(self, role: str, message: str):
-        prompt = self.prompt + "Following is a user chat message directed at you." + "\n\n"
+        prompt = (
+            self.prompt
+            + "The following is a user chat message directed at you, the format will be the same for subsequent messages, respond with only the message content, without specyfing actions."
+            + "\n\n"
+        )
         if len(self.memory) == 0:
             message = prompt + message
         if len(self.memory) >= 15:
@@ -152,6 +156,7 @@ class Chat(commands.Cog):
         chat_response = self.replace_emojis(chat_response)
         chat_response = self.strip_emojis(chat_response)
         chat_response = re.sub(r"[ ]{2,}", " ", chat_response)
+        chat_response = re.sub(r"[\n]{2,}", "\n", chat_response)
 
         self.add_assistant_memory(chat_response)
         return chat_response
@@ -182,7 +187,7 @@ class Chat(commands.Cog):
         if not content:
             return
 
-        content = message.author.display_name + ": " + content
+        content = f"[USERNAME]: {message.author.display_name}\n[MESSAGE]: {content}"
 
         try:
             async with message.channel.typing():

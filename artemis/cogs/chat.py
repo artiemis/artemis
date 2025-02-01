@@ -116,7 +116,7 @@ class Chat(commands.Cog):
         return content
 
     def add_memory(self, role: str, message: str):
-        prompt = "You're Artemis, a friendly AI hanging out in this Discord server, following is a user chat message directed at you.\n\n"
+        prompt = "You're Artemis, a bot hanging out in this Discord server, you're friendly and can answer anything, following is a user chat message directed at you.\n\n"
         if len(self.memory) == 0:
             message = prompt + message
         if len(self.memory) >= 15:

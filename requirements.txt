@@ -25,3 +25,4 @@ h2
 aiogoogletrans
 setuptools
 legacy-cgi
+huggingface_hub

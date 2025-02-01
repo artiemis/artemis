@@ -60,7 +60,7 @@ class Artemis(commands.Bot):
             status = {"name": None, "emoji": None}
 
         super().__init__(
-            command_prefix=commands.when_mentioned_or(config.prefix),
+            command_prefix=config.prefix,
             help_command=HelpEmbedded(command_attrs={"hidden": True}, verify_checks=False),
             intents=intents,
             allowed_mentions=discord.AllowedMentions(everyone=False, replied_user=False),

@@ -12,6 +12,7 @@ class Secrets:
     cloudflare: str
     openai: str
     deepl: str
+    huggingface: str
 
 
 @dataclass

@@ -124,18 +124,17 @@ class Chat(commands.Cog):
         return content
 
     def add_memory(self, role: str, message: str):
-        prompt = (
-            self.prompt
-            + "The following is a user chat message directed at you, the format will be the same for subsequent messages, respond with only the message content, without specyfing actions."
-            + "\n\n"
-        )
+        prompt = self.prompt + "\n\n"
         if len(self.memory) == 0:
             message = prompt + message
-        if len(self.memory) >= 15:
+        if len(self.memory) >= 20:
             del self.memory[0]
             del self.memory[0]
-            self.memory[0] = {"role": "user", "content": prompt + self.memory[0]["content"]}
-        self.memory.append({"role": role, "content": message})
+            self.memory[0] = {
+                "role": "user",
+                "content": (prompt + self.memory[0]["content"]).strip(),
+            }
+        self.memory.append({"role": role, "content": message.strip()})
 
     def add_user_memory(self, message: str):
         self.add_memory("user", message)
@@ -186,8 +185,6 @@ class Chat(commands.Cog):
 
         if not content:
             return
-
-        content = f"[USERNAME]: {message.author.display_name}\n[MESSAGE]: {content}"
 
         try:
             async with message.channel.typing():

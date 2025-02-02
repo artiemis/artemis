@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from pathlib import Path
 import re
 from typing import TYPE_CHECKING
 
@@ -12,6 +11,7 @@ from discord.ext import commands
 from huggingface_hub import AsyncInferenceClient
 
 from artemis.utils import config
+from artemis.utils.constants import TEMP_DIR
 
 
 if TYPE_CHECKING:
@@ -107,10 +107,12 @@ class Chat(commands.Cog):
         self.lock = asyncio.Lock()
 
     def read_prompt(self):
-        return Path("temp/prompt").read_text() if Path("temp/prompt").exists() else ""
+        path = TEMP_DIR / "prompt"
+        return path.read_text() if path.exists() else ""
 
     def write_prompt(self, prompt: str):
-        Path("temp/prompt").write_text(prompt)
+        path = TEMP_DIR / "prompt"
+        path.write_text(prompt)
 
     def replace_emojis(self, text: str) -> str:
         return EMOJI_RE.sub(lambda match: emoji_map[match.group(0)], text)
@@ -210,12 +212,16 @@ class Chat(commands.Cog):
     async def _prompt(self, ctx: commands.Context, *, prompt: str = None):
         """Get or set system prompt and reset chat memory."""
         if not prompt:
-            await ctx.send(self.prompt)
-            return
-        self.prompt = prompt
-        self.write_prompt(prompt)
-        self.memory = []
-        await ctx.send("Prompt updated.")
+            await ctx.send(repr(self.prompt) if len(self.prompt) > 0 else "No prompt set.")
+        elif prompt == "reset":
+            self.prompt = ""
+            self.write_prompt(self.prompt)
+            await ctx.send("Prompt reset.")
+        else:
+            self.prompt = prompt
+            self.write_prompt(prompt)
+            self.memory = []
+            await ctx.send("Prompt updated.")
 
 
 async def setup(bot: Artemis):
